@@ -34,7 +34,29 @@ impl Parse for instructions::BlockType {
 
 impl Parse for instructions::Catch {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        Ok(match u8::parse(input)? {
+            0x00 => Self {
+                tag: Some(<_>::parse(input)?),
+                label: <_>::parse(input)?,
+                by_ref: false,
+            },
+            0x01 => Self {
+                tag: Some(<_>::parse(input)?),
+                label: <_>::parse(input)?,
+                by_ref: true,
+            },
+            0x02 => Self {
+                tag: None,
+                label: <_>::parse(input)?,
+                by_ref: false,
+            },
+            0x03 => Self {
+                tag: None,
+                label: <_>::parse(input)?,
+                by_ref: true,
+            },
+            _ => return Err(Error),
+        })
     }
 }
 
