@@ -71,7 +71,7 @@ pub struct Code(Todo);
 
 pub struct Data(Todo);
 
-pub struct DataCnt(Todo);
+pub struct DataCnt(pub u32);
 
 pub struct Tag(Todo);
 

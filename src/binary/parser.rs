@@ -289,7 +289,7 @@ impl Parse for modules::Data {
 
 impl Parse for modules::DataCnt {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        <_>::parse(input).map(Self)
     }
 }
 
