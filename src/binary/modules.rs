@@ -16,6 +16,12 @@ pub struct ElemIdx(pub u32);
 
 pub struct DataIdx(pub u32);
 
+pub struct LocalIdx(pub u32);
+
+pub struct FieldIdx(pub u32);
+
+pub struct LabelIdx(pub u32);
+
 pub enum ExternIdx {
     Func(FuncIdx),
     Table(TableIdx),

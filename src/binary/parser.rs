@@ -126,6 +126,24 @@ impl Parse for modules::DataIdx {
     }
 }
 
+impl Parse for modules::LocalIdx {
+    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+        <_>::parse(input).map(Self)
+    }
+}
+
+impl Parse for modules::FieldIdx {
+    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+        <_>::parse(input).map(Self)
+    }
+}
+
+impl Parse for modules::LabelIdx {
+    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+        <_>::parse(input).map(Self)
+    }
+}
+
 impl Parse for modules::ExternIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         match u8::parse(input)? {
