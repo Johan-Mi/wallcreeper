@@ -1,5 +1,3 @@
-use crate::binary::modules::MemIdx;
-
 use super::{instructions, modules, types, values};
 use alloc::vec::Vec;
 
@@ -79,6 +77,7 @@ impl Parse for instructions::CastOp {
 
 impl Parse for instructions::MemArg {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+        use modules::MemIdx;
         let align: u32 = <_>::parse(input)?;
         let (memory, align) = if align < 1 << 6 {
             (MemIdx(0), align)
@@ -215,19 +214,7 @@ impl Parse for modules::SectionId {
     }
 }
 
-// impl<T: Parse> Parse for modules::Section<T> {
-//     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-//         todo!()
-//     }
-// }
-
 impl Parse for modules::Custom {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
-    }
-}
-
-impl Parse for modules::Type {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         todo!()
     }
@@ -258,12 +245,6 @@ impl Parse for modules::Global {
 }
 
 impl Parse for modules::Export {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
-    }
-}
-
-impl Parse for modules::Start {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         todo!()
     }
@@ -302,7 +283,73 @@ impl Parse for modules::Tag {
 impl Parse for modules::Module {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         *input = input.strip_prefix(b"\0asm\x01\0\0\0").ok_or(Error)?;
-        todo!()
+
+        let mut customsecs = Vec::new();
+        let mut typesec = Vec::new();
+        let mut importsec = Vec::new();
+        let mut funcsec = Vec::new();
+        let mut tablesec = Vec::new();
+        let mut memsec = Vec::new();
+        let mut tagsec = Vec::new();
+        let mut globalsec = Vec::new();
+        let mut exportsec = Vec::new();
+        let mut startsec = None;
+        let mut elemsec = Vec::new();
+        let mut datacntsec = None;
+        let mut codesec = Vec::new();
+        let mut datasec = Vec::new();
+
+        let mut section_id_prev = None;
+        while !input.is_empty() {
+            use modules::SectionId;
+
+            let section_id: SectionId = <_>::parse(input)?;
+            if section_id != SectionId::Custom {
+                if Some(section_id) <= section_id_prev {
+                    return Err(Error);
+                }
+                section_id_prev = Some(section_id);
+            }
+
+            let len_wanted = usize(<_>::parse(input)?);
+            let len_before = input.len();
+            match section_id {
+                SectionId::Custom => customsecs.push(<_>::parse(input)?),
+                SectionId::Type => typesec = <_>::parse(input)?,
+                SectionId::Import => importsec = <_>::parse(input)?,
+                SectionId::Function => funcsec = <_>::parse(input)?,
+                SectionId::Table => tablesec = <_>::parse(input)?,
+                SectionId::Memory => memsec = <_>::parse(input)?,
+                SectionId::Tag => tagsec = <_>::parse(input)?,
+                SectionId::Global => globalsec = <_>::parse(input)?,
+                SectionId::Export => exportsec = <_>::parse(input)?,
+                SectionId::Start => startsec = Some(<_>::parse(input)?),
+                SectionId::Element => elemsec = <_>::parse(input)?,
+                SectionId::DataCount => datacntsec = Some(<_>::parse(input)?),
+                SectionId::Code => codesec = <_>::parse(input)?,
+                SectionId::Data => datasec = <_>::parse(input)?,
+            }
+            if len_wanted != len_before.strict_sub(input.len()) {
+                return Err(Error);
+            }
+        }
+
+        Ok(Self {
+            customsecs,
+            typesec,
+            importsec,
+            funcsec,
+            tablesec,
+            memsec,
+            tagsec,
+            globalsec,
+            exportsec,
+            startsec,
+            elemsec,
+            datacntsec,
+            codesec,
+            datasec,
+        })
     }
 }
 
