@@ -40,7 +40,16 @@ impl Parse for instructions::Catch {
 
 impl Parse for instructions::CastOp {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        use instructions::Nullable;
+        let (source, target) = match u8::parse(input)? {
+            0x00 => (false, false),
+            0x01 => (true, false),
+            0x02 => (false, true),
+            0x03 => (true, true),
+            _ => return Err(Error),
+        };
+        let (source, target) = (Nullable(source), Nullable(target));
+        Ok(Self { source, target })
     }
 }
 
