@@ -1,5 +1,5 @@
 use crate::Todo;
-use crate::binary::modules::{LabelIdx, TagIdx};
+use crate::binary::modules::{LabelIdx, MemIdx, TagIdx};
 use alloc::vec::Vec;
 
 pub struct Instr(Todo);
@@ -19,7 +19,11 @@ pub struct CastOp {
 
 pub struct Nullable(pub bool);
 
-pub struct MemArg(Todo);
+pub struct MemArg {
+    pub memory: MemIdx,
+    pub align: u32,
+    pub offset: u64,
+}
 
 pub struct LaneIdx(pub u8);
 

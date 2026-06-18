@@ -1,3 +1,5 @@
+use crate::binary::modules::MemIdx;
+
 use super::{instructions, modules, types, values};
 use alloc::vec::Vec;
 
@@ -77,7 +79,19 @@ impl Parse for instructions::CastOp {
 
 impl Parse for instructions::MemArg {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        let align: u32 = <_>::parse(input)?;
+        let (memory, align) = if align < 1 << 6 {
+            (MemIdx(0), align)
+        } else if align < 1 << 7 {
+            (<_>::parse(input)?, align - (1 << 7))
+        } else {
+            return Err(Error);
+        };
+        Ok(Self {
+            memory,
+            align,
+            offset: <_>::parse(input)?,
+        })
     }
 }
 
