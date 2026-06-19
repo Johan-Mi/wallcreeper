@@ -51,7 +51,10 @@ pub enum SectionId {
     Data,
 }
 
-pub struct Custom(Todo);
+pub struct Custom {
+    pub name: Name,
+    pub bytes: Vec<u8>,
+}
 
 pub struct Import {
     module: Name,

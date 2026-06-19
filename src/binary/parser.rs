@@ -214,9 +214,13 @@ impl Parse for modules::SectionId {
     }
 }
 
-impl Parse for modules::Custom {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+impl modules::Custom {
+    fn parse(len_total: usize, input: &mut &[u8]) -> Result<Self, Error> {
+        let len_before = input.len();
+        let name: values::Name = <_>::parse(input)?;
+        let len_bytes = len_total.strict_sub(len_before.strict_sub(input.len()));
+        let bytes = input.split_off(..len_bytes).ok_or(Error)?.into();
+        Ok(Self { name, bytes })
     }
 }
 
@@ -308,7 +312,7 @@ impl Parse for modules::Module {
             let len_wanted = usize(<_>::parse(input)?);
             let len_before = input.len();
             match section_id {
-                SectionId::Custom => customsecs.push(<_>::parse(input)?),
+                SectionId::Custom => customsecs.push(modules::Custom::parse(len_wanted, input)?),
                 SectionId::Type => typesec = <_>::parse(input)?,
                 SectionId::Import => importsec = <_>::parse(input)?,
                 SectionId::Function => funcsec = <_>::parse(input)?,
