@@ -259,7 +259,10 @@ impl Parse for modules::Table {
 
 impl Parse for modules::Global {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        Ok(Self {
+            r#type: <_>::parse(input)?,
+            initializer: <_>::parse(input)?,
+        })
     }
 }
 
