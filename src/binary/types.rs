@@ -44,7 +44,10 @@ pub struct Mut(pub bool);
 
 pub struct CompType(Todo);
 
-pub struct FieldType(Todo);
+pub struct FieldType {
+    pub r#type: StorageType,
+    pub mutability: Option<Mut>,
+}
 
 pub struct StorageType(Todo);
 

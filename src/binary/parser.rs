@@ -432,7 +432,9 @@ impl Parse for types::CompType {
 
 impl Parse for types::FieldType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        let r#type = <_>::parse(input)?;
+        let mutability = <_>::parse(input).ok();
+        Ok(Self { r#type, mutability })
     }
 }
 
