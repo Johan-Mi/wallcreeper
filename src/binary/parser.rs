@@ -623,11 +623,14 @@ fn u8(input: &mut &[u8]) -> Result<u8, Error> {
     input.split_off_first().copied().ok_or(Error)
 }
 
-fn u32(input: &mut &[u8]) -> Result<u32, Error> {
-    let mut n = 0;
-    for shift in 0..u32::BITS / 7 {
+fn uleb128<T>(input: &mut &[u8]) -> Result<T, Error>
+where
+    T: Default + From<u8> + core::ops::BitOrAssign + core::ops::Shl<usize, Output = T>,
+{
+    let mut n = T::default();
+    for shift in 0..size_of::<T>() * 8 / 7 {
         let byte = u8(input)?;
-        n |= u32::from(byte & !(1 << 7)) << (shift * 7);
+        n |= T::from(byte & !(1 << 7)) << (shift * 7);
         if byte & (1 << 7) == 0 {
             return Ok(n);
         }
@@ -635,16 +638,12 @@ fn u32(input: &mut &[u8]) -> Result<u32, Error> {
     Err(Error)
 }
 
+fn u32(input: &mut &[u8]) -> Result<u32, Error> {
+    uleb128(input)
+}
+
 fn u64(input: &mut &[u8]) -> Result<u64, Error> {
-    let mut n = 0;
-    for shift in 0..u64::BITS / 7 {
-        let byte = u8(input)?;
-        n |= u64::from(byte & !(1 << 7)) << (shift * 7);
-        if byte & (1 << 7) == 0 {
-            return Ok(n);
-        }
-    }
-    Err(Error)
+    uleb128(input)
 }
 
 fn f32(input: &mut &[u8]) -> Result<f32, Error> {
