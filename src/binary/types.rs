@@ -1,6 +1,7 @@
 use super::{instructions, modules};
 use alloc::vec::Vec;
 
+#[derive(Clone, Copy)]
 pub enum NumType {
     F64,
     F32,
@@ -8,10 +9,12 @@ pub enum NumType {
     I32,
 }
 
+#[derive(Clone, Copy)]
 pub enum VecType {
     V128,
 }
 
+#[derive(Clone, Copy)]
 pub enum AbsHeapType {
     Exn,
     Array,
@@ -27,16 +30,19 @@ pub enum AbsHeapType {
     NoExn,
 }
 
+#[derive(Clone, Copy)]
 pub enum HeapType {
     Abstract(AbsHeapType),
     Concrete(modules::TypeIdx),
 }
 
+#[derive(Clone, Copy)]
 pub struct RefType {
     pub r#type: HeapType,
     pub nullability: instructions::Nullable,
 }
 
+#[derive(Clone, Copy)]
 pub enum ValType {
     Num(NumType),
     Vec(VecType),

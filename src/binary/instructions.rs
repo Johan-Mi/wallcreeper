@@ -22,6 +22,7 @@ pub struct CastOp {
     pub target: Nullable,
 }
 
+#[derive(Clone, Copy)]
 pub struct Nullable(pub bool);
 
 pub struct MemArg {

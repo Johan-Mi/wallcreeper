@@ -1,8 +1,9 @@
-use super::types::{ExternType, GlobalType, MemType, RecType, TableType, TagType};
+use super::types::{ExternType, GlobalType, MemType, RecType, TableType, TagType, ValType};
 use super::{instructions::Expr, values::Name};
 use crate::Todo;
 use alloc::vec::Vec;
 
+#[derive(Clone, Copy)]
 pub struct TypeIdx(pub u32);
 
 pub struct FuncIdx(pub u32);
@@ -79,7 +80,10 @@ pub struct Export {
 
 pub struct Elem(Todo);
 
-pub struct Code(Todo);
+pub struct Code {
+    pub locals: Vec<ValType>,
+    pub body: Expr,
+}
 
 pub struct Data(Todo);
 

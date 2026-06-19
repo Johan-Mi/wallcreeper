@@ -282,7 +282,31 @@ impl Parse for modules::Elem {
 
 impl Parse for modules::Code {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        struct Locals {
+            count: u32,
+            r#type: types::ValType,
+        }
+
+        impl Parse for Locals {
+            fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+                let count = <_>::parse(input)?;
+                let r#type = <_>::parse(input)?;
+                Ok(Self { count, r#type })
+            }
+        }
+
+        let len_wanted = usize(<_>::parse(input)?);
+        let len_before = input.len();
+        let locals: Vec<Locals> = <_>::parse(input)?;
+        let body = <_>::parse(input)?;
+        if len_wanted != len_before.strict_sub(input.len()) {
+            return Err(Error);
+        }
+        let locals = locals
+            .iter()
+            .flat_map(|it| core::iter::repeat_n(it.r#type, usize(it.count)))
+            .collect();
+        Ok(Self { locals, body })
     }
 }
 
