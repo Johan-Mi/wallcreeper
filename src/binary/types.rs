@@ -28,7 +28,10 @@ pub enum AbsHeapType {
     NoExn,
 }
 
-pub struct HeapType(Todo);
+pub enum HeapType {
+    Abstract(AbsHeapType),
+    Concrete(modules::TypeIdx),
+}
 
 pub struct RefType(Todo);
 

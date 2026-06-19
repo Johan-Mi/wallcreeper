@@ -394,7 +394,7 @@ impl Parse for types::AbsHeapType {
 
 impl Parse for types::HeapType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        <_>::parse(input).map(Self::Abstract).or_else(|_| todo!())
     }
 }
 
