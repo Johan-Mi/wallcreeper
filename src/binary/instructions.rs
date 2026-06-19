@@ -1,4 +1,3 @@
-use crate::Todo;
 use crate::binary::modules::{LabelIdx, MemIdx, TagIdx, TypeIdx};
 use crate::binary::types::ValType;
 use alloc::vec::Vec;

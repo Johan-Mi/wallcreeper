@@ -9,6 +9,3 @@ mod binary {
     mod types;
     mod values;
 }
-
-#[deprecated]
-enum Todo {}
