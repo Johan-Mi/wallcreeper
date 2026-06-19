@@ -14,10 +14,9 @@ impl instructions::BlockType {
         if byte(0x40, input) {
             Ok(Self::None)
         } else {
-            types::ValType::parse(input).map(Self::Val).or_else(|_| {
-                let idx = leb128_i33(input)?.try_into().map_err(|_| Error)?;
-                Ok(Self::Idx(modules::TypeIdx(idx)))
-            })
+            types::ValType::parse(input)
+                .map(Self::Val)
+                .or_else(|_| Ok(Self::Idx(modules::TypeIdx(leb128_s33_positive(input)?))))
         }
     }
 }
@@ -444,7 +443,11 @@ impl types::HeapType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         types::AbsHeapType::parse(input)
             .map(Self::Abstract)
-            .or_else(|_| todo!())
+            .or_else(|_| {
+                Ok(Self::Concrete(modules::TypeIdx(leb128_s33_positive(
+                    input,
+                )?)))
+            })
     }
 }
 
@@ -657,7 +660,7 @@ where
     Err(Error)
 }
 
-fn leb128_i33(input: &mut &[u8]) -> Result<i64, Error> {
+fn leb128_s33_positive(input: &mut &[u8]) -> Result<u32, Error> {
     let mut n = 0;
     for shift in 0..33_usize.div_ceil(7) {
         let byte = u8(input)?;
@@ -666,7 +669,7 @@ fn leb128_i33(input: &mut &[u8]) -> Result<i64, Error> {
             if byte & (1 << 6) != 0 {
                 n |= !0 << (shift * 7);
             }
-            return Ok(n);
+            return n.try_into().map_err(|_| Error);
         }
     }
     Err(Error)
