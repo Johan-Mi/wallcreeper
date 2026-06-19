@@ -400,11 +400,9 @@ impl Parse for types::HeapType {
 
 impl Parse for types::RefType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let (r#type, nullable) = if let Some(rest) = input.strip_prefix(&[0x63]) {
-            *input = rest;
+        let (r#type, nullable) = if byte(0x63, input) {
             (<_>::parse(input)?, true)
-        } else if let Some(rest) = input.strip_prefix(&[0x64]) {
-            *input = rest;
+        } else if byte(0x64, input) {
             (<_>::parse(input)?, false)
         } else {
             (types::HeapType::Abstract(<_>::parse(input)?), false)
@@ -478,8 +476,7 @@ impl Parse for types::PackType {
 
 impl Parse for types::RecType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(Self(if let Some(rest) = input.strip_prefix(&[0x4e]) {
-            *input = rest;
+        Ok(Self(if byte(0x4e, input) {
             <_>::parse(input)?
         } else {
             [<_>::parse(input)?].into()
@@ -624,4 +621,8 @@ impl Parse for values::Name {
         let bytes: Vec<u8> = <_>::parse(input)?;
         bytes.try_into().map_err(|_| Error).map(values::Name)
     }
+}
+
+fn byte(b: u8, input: &mut &[u8]) -> bool {
+    input.strip_prefix(&[b]).inspect(|it| *input = it).is_some()
 }
