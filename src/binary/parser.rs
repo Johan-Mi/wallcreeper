@@ -400,7 +400,19 @@ impl Parse for types::HeapType {
 
 impl Parse for types::RefType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        let (r#type, nullable) = if let Some(rest) = input.strip_prefix(&[0x63]) {
+            *input = rest;
+            (<_>::parse(input)?, true)
+        } else if let Some(rest) = input.strip_prefix(&[0x64]) {
+            *input = rest;
+            (<_>::parse(input)?, false)
+        } else {
+            (types::HeapType::Abstract(<_>::parse(input)?), false)
+        };
+        Ok(Self {
+            r#type,
+            nullability: instructions::Nullable(nullable),
+        })
     }
 }
 

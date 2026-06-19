@@ -1,4 +1,4 @@
-use super::modules;
+use super::{instructions, modules};
 use crate::Todo;
 use alloc::vec::Vec;
 
@@ -33,7 +33,10 @@ pub enum HeapType {
     Concrete(modules::TypeIdx),
 }
 
-pub struct RefType(Todo);
+pub struct RefType {
+    pub r#type: HeapType,
+    pub nullability: instructions::Nullable,
+}
 
 pub enum ValType {
     Num(NumType),
