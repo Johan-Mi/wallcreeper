@@ -14,9 +14,10 @@ impl instructions::BlockType {
         if byte(0x40, input) {
             Ok(Self::None)
         } else {
-            types::ValType::parse(input)
-                .map(Self::Val)
-                .or_else(|_| todo!())
+            types::ValType::parse(input).map(Self::Val).or_else(|_| {
+                let idx = leb128_i33(input)?.try_into().map_err(|_| Error)?;
+                Ok(Self::Idx(modules::TypeIdx(idx)))
+            })
         }
     }
 }
@@ -650,6 +651,21 @@ where
         let byte = u8(input)?;
         n |= T::from(byte & !(1 << 7)) << (shift * 7);
         if byte & (1 << 7) == 0 {
+            return Ok(n);
+        }
+    }
+    Err(Error)
+}
+
+fn leb128_i33(input: &mut &[u8]) -> Result<i64, Error> {
+    let mut n = 0;
+    for shift in 0..33_usize.div_ceil(7) {
+        let byte = u8(input)?;
+        n |= i64::from(byte & !(1 << 7)) << (shift * 7);
+        if byte & (1 << 7) == 0 {
+            if byte & (1 << 6) != 0 {
+                n |= !0 << (shift * 7);
+            }
             return Ok(n);
         }
     }
