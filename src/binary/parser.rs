@@ -414,7 +414,7 @@ impl Parse for types::ValType {
 
 impl Parse for types::ResultType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        <_>::parse(input).map(Self)
     }
 }
 

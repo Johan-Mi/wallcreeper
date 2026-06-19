@@ -38,7 +38,7 @@ pub enum ValType {
     Ref(RefType),
 }
 
-pub struct ResultType(Vec<ValType>);
+pub struct ResultType(pub Vec<ValType>);
 
 pub struct Mut(pub bool);
 
