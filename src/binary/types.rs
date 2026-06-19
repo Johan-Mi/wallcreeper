@@ -74,7 +74,11 @@ pub enum PackType {
 
 pub struct RecType(pub Vec<SubType>);
 
-pub struct SubType(Todo);
+pub struct SubType {
+    pub is_final: bool,
+    pub uses: Vec<modules::TypeIdx>,
+    pub comp: CompType,
+}
 
 pub struct Limits {
     pub start: u64,

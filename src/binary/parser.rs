@@ -486,7 +486,25 @@ impl Parse for types::RecType {
 
 impl Parse for types::SubType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        Ok(if byte(0x4f, input) {
+            Self {
+                is_final: true,
+                uses: <_>::parse(input)?,
+                comp: <_>::parse(input)?,
+            }
+        } else if byte(0x50, input) {
+            Self {
+                is_final: false,
+                uses: <_>::parse(input)?,
+                comp: <_>::parse(input)?,
+            }
+        } else {
+            Self {
+                is_final: true,
+                uses: Vec::new(),
+                comp: <_>::parse(input)?,
+            }
+        })
     }
 }
 
