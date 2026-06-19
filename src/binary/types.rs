@@ -72,7 +72,7 @@ pub enum PackType {
     I8,
 }
 
-pub struct RecType(Todo);
+pub struct RecType(pub Vec<SubType>);
 
 pub struct SubType(Todo);
 

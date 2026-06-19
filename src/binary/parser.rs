@@ -478,7 +478,12 @@ impl Parse for types::PackType {
 
 impl Parse for types::RecType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        Ok(Self(if let Some(rest) = input.strip_prefix(&[0x4e]) {
+            *input = rest;
+            <_>::parse(input)?
+        } else {
+            [<_>::parse(input)?].into()
+        }))
     }
 }
 
