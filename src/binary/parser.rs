@@ -440,7 +440,9 @@ impl Parse for types::FieldType {
 
 impl Parse for types::StorageType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        <_>::parse(input)
+            .map(Self::Val)
+            .or_else(|_| <_>::parse(input).map(Self::Pack))
     }
 }
 

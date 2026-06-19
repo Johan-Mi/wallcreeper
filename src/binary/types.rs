@@ -49,7 +49,10 @@ pub struct FieldType {
     pub mutability: Option<Mut>,
 }
 
-pub struct StorageType(Todo);
+pub enum StorageType {
+    Val(ValType),
+    Pack(PackType),
+}
 
 pub enum PackType {
     I16,
