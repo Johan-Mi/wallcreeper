@@ -278,12 +278,6 @@ impl Parse for modules::DataCnt {
     }
 }
 
-impl Parse for modules::Tag {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
-    }
-}
-
 impl Parse for modules::Module {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         *input = input.strip_prefix(b"\0asm\x01\0\0\0").ok_or(Error)?;

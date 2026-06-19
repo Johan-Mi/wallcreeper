@@ -79,8 +79,6 @@ pub struct Data(Todo);
 
 pub struct DataCnt(pub u32);
 
-pub struct Tag(Todo);
-
 pub struct Module {
     pub customsecs: Vec<Custom>,
     pub typesec: Vec<RecType>,
