@@ -66,7 +66,10 @@ pub struct Table(Todo);
 
 pub struct Global(Todo);
 
-pub struct Export(Todo);
+pub struct Export {
+    pub name: Name,
+    pub definition: ExternIdx,
+}
 
 pub struct Elem(Todo);
 

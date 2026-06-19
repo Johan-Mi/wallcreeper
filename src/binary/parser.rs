@@ -248,7 +248,9 @@ impl Parse for modules::Global {
 
 impl Parse for modules::Export {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        let name = <_>::parse(input)?;
+        let definition = <_>::parse(input)?;
+        Ok(Self { name, definition })
     }
 }
 
