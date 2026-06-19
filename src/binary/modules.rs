@@ -34,7 +34,7 @@ pub enum ExternIdx {
     Tag(TagIdx),
 }
 
-#[derive(Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd)]
 pub enum SectionId {
     Custom,
     Type,
