@@ -297,7 +297,20 @@ impl modules::Code {
 
 impl modules::Data {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        let mode = match u32(input)? {
+            0 => modules::DataMode::Active {
+                memory: modules::MemIdx(0),
+                offset: instructions::Expr::parse(input)?,
+            },
+            1 => modules::DataMode::Passive,
+            2 => modules::DataMode::Active {
+                memory: modules::MemIdx::parse(input)?,
+                offset: instructions::Expr::parse(input)?,
+            },
+            _ => return Err(Error),
+        };
+        let bytes = vec(u8, input)?;
+        Ok(Self { bytes, mode })
     }
 }
 

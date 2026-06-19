@@ -85,7 +85,15 @@ pub struct Code {
     pub body: Expr,
 }
 
-pub struct Data(Todo);
+pub struct Data {
+    pub bytes: Vec<u8>,
+    pub mode: DataMode,
+}
+
+pub enum DataMode {
+    Active { memory: MemIdx, offset: Expr },
+    Passive,
+}
 
 pub struct DataCnt(pub u32);
 
