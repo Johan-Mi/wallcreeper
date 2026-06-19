@@ -426,7 +426,15 @@ impl Parse for types::Mut {
 
 impl Parse for types::CompType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        Ok(match u8::parse(input)? {
+            0x5e => Self::Array(<_>::parse(input)?),
+            0x5f => Self::Struct(<_>::parse(input)?),
+            0x60 => Self::Func {
+                inputs: <_>::parse(input)?,
+                outputs: <_>::parse(input)?,
+            },
+            _ => return Err(Error),
+        })
     }
 }
 

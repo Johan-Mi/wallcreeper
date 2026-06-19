@@ -42,7 +42,14 @@ pub struct ResultType(Vec<ValType>);
 
 pub struct Mut(pub bool);
 
-pub struct CompType(Todo);
+pub enum CompType {
+    Array(FieldType),
+    Struct(Vec<FieldType>),
+    Func {
+        inputs: ResultType,
+        outputs: ResultType,
+    },
+}
 
 pub struct FieldType {
     pub r#type: StorageType,
