@@ -57,9 +57,9 @@ pub struct Custom {
 }
 
 pub struct Import {
-    module: Name,
-    item: Name,
-    r#type: ExternType,
+    pub module: Name,
+    pub item: Name,
+    pub r#type: ExternType,
 }
 
 pub struct Table(Todo);

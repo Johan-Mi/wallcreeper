@@ -226,7 +226,11 @@ impl modules::Custom {
 
 impl Parse for modules::Import {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        Ok(Self {
+            module: <_>::parse(input)?,
+            item: <_>::parse(input)?,
+            r#type: <_>::parse(input)?,
+        })
     }
 }
 
