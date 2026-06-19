@@ -1,4 +1,4 @@
-use super::types::{ExternType, RecType, TagType};
+use super::types::{ExternType, MemType, RecType, TagType};
 use super::values::Name;
 use crate::Todo;
 use alloc::vec::Vec;
@@ -61,8 +61,6 @@ pub struct Import {
 
 pub struct Table(Todo);
 
-pub struct Mem(Todo);
-
 pub struct Global(Todo);
 
 pub struct Export(Todo);
@@ -83,7 +81,7 @@ pub struct Module {
     pub importsec: Vec<Import>,
     pub funcsec: Vec<TypeIdx>,
     pub tablesec: Vec<Table>,
-    pub memsec: Vec<Mem>,
+    pub memsec: Vec<MemType>,
     pub tagsec: Vec<TagType>,
     pub globalsec: Vec<Global>,
     pub exportsec: Vec<Export>,
