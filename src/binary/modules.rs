@@ -1,6 +1,7 @@
-use super::types::{ExternType, GlobalType, MemType, RecType, TableType, TagType, ValType};
+use super::types::{
+    ExternType, GlobalType, MemType, RecType, RefType, TableType, TagType, ValType,
+};
 use super::{instructions::Expr, values::Name};
-use crate::Todo;
 use alloc::vec::Vec;
 
 #[derive(Clone, Copy)]
@@ -78,7 +79,17 @@ pub struct Export {
     pub definition: ExternIdx,
 }
 
-pub struct Elem(Todo);
+pub struct Elem {
+    pub r#type: RefType,
+    pub items: Vec<Expr>,
+    pub mode: ElemMode,
+}
+
+pub enum ElemMode {
+    Active { table: TableIdx, offset: Expr },
+    Passive,
+    Declare,
+}
 
 pub struct Code {
     pub locals: Vec<ValType>,

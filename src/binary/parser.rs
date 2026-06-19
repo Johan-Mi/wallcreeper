@@ -261,6 +261,11 @@ impl modules::Export {
 
 impl modules::Elem {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+        let bit = {
+            let bits = u32(input)?;
+            let ..8 = bits else { return Err(Error) };
+            move |i: u8| bits & (1 << i) != 0
+        };
         todo!()
     }
 }
