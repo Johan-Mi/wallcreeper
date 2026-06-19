@@ -28,7 +28,11 @@ impl Parse for instructions::Instr {
 
 impl Parse for instructions::BlockType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        if byte(0x40, input) {
+            Ok(Self::None)
+        } else {
+            <_>::parse(input).map(Self::Val).or_else(|_| todo!())
+        }
     }
 }
 

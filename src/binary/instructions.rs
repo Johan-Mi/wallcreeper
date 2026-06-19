@@ -1,10 +1,15 @@
 use crate::Todo;
-use crate::binary::modules::{LabelIdx, MemIdx, TagIdx};
+use crate::binary::modules::{LabelIdx, MemIdx, TagIdx, TypeIdx};
+use crate::binary::types::ValType;
 use alloc::vec::Vec;
 
 pub struct Instr(Todo);
 
-pub struct BlockType(Todo);
+pub enum BlockType {
+    None,
+    Val(ValType),
+    Idx(TypeIdx),
+}
 
 pub struct Catch {
     pub tag: Option<TagIdx>,
