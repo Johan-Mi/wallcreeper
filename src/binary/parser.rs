@@ -667,7 +667,7 @@ fn leb128_s33_positive(input: &mut &[u8]) -> Result<u32, Error> {
         n |= i64::from(byte & !(1 << 7)) << (shift * 7);
         if byte & (1 << 7) == 0 {
             if byte & (1 << 6) != 0 {
-                n |= !0 << (shift * 7);
+                return Err(Error);
             }
             return n.try_into().map_err(|_| Error);
         }
