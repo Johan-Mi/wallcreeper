@@ -1,5 +1,5 @@
-use super::types::{ExternType, MemType, RecType, TagType};
-use super::values::Name;
+use super::types::{ExternType, MemType, RecType, TableType, TagType};
+use super::{instructions::Expr, values::Name};
 use crate::Todo;
 use alloc::vec::Vec;
 
@@ -62,7 +62,10 @@ pub struct Import {
     pub r#type: ExternType,
 }
 
-pub struct Table(Todo);
+pub struct Table {
+    pub r#type: TableType,
+    pub initializer: Expr,
+}
 
 pub struct Global(Todo);
 

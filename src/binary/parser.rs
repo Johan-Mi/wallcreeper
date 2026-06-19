@@ -240,7 +240,20 @@ impl Parse for modules::Import {
 
 impl Parse for modules::Table {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        todo!()
+        if byte(0x40, input) {
+            if !byte(0x00, input) {
+                return Err(Error);
+            }
+            Ok(Self {
+                r#type: <_>::parse(input)?,
+                initializer: <_>::parse(input)?,
+            })
+        } else {
+            Ok(Self {
+                r#type: <_>::parse(input)?,
+                initializer: instructions::Expr([todo!()].into()),
+            })
+        }
     }
 }
 
