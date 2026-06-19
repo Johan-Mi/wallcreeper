@@ -1,5 +1,4 @@
 use super::{instructions, modules};
-use crate::Todo;
 use alloc::vec::Vec;
 
 pub enum NumType {
