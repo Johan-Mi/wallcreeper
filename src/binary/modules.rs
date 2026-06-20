@@ -5,29 +5,29 @@ use super::{instructions::Expr, values::Name};
 use alloc::vec::Vec;
 
 #[derive(Clone, Copy)]
-pub struct TypeIdx(pub u32);
+pub(crate) struct TypeIdx(pub u32);
 
-pub struct FuncIdx(pub u32);
+pub(crate) struct FuncIdx(pub u32);
 
-pub struct TableIdx(pub u32);
+pub(crate) struct TableIdx(pub u32);
 
-pub struct MemIdx(pub u32);
+pub(crate) struct MemIdx(pub u32);
 
-pub struct GlobalIdx(pub u32);
+pub(crate) struct GlobalIdx(pub u32);
 
-pub struct TagIdx(pub u32);
+pub(crate) struct TagIdx(pub u32);
 
-pub struct ElemIdx(pub u32);
+pub(crate) struct ElemIdx(pub u32);
 
-pub struct DataIdx(pub u32);
+pub(crate) struct DataIdx(pub u32);
 
-pub struct LocalIdx(pub u32);
+pub(crate) struct LocalIdx(pub u32);
 
-pub struct FieldIdx(pub u32);
+pub(crate) struct FieldIdx(pub u32);
 
-pub struct LabelIdx(pub u32);
+pub(crate) struct LabelIdx(pub u32);
 
-pub enum ExternIdx {
+pub(crate) enum ExternIdx {
     Func(FuncIdx),
     Table(TableIdx),
     Memory(MemIdx),
@@ -36,7 +36,7 @@ pub enum ExternIdx {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd)]
-pub enum SectionId {
+pub(crate) enum SectionId {
     Custom,
     Type,
     Import,
@@ -53,74 +53,74 @@ pub enum SectionId {
     Data,
 }
 
-pub struct Custom {
+pub(crate) struct Custom {
     pub name: Name,
     pub bytes: Vec<u8>,
 }
 
-pub struct Import {
+pub(crate) struct Import {
     pub module: Name,
     pub item: Name,
     pub r#type: ExternType,
 }
 
-pub struct Table {
+pub(crate) struct Table {
     pub r#type: TableType,
     pub initializer: Expr,
 }
 
-pub struct Global {
+pub(crate) struct Global {
     pub r#type: GlobalType,
     pub initializer: Expr,
 }
 
-pub struct Export {
+pub(crate) struct Export {
     pub name: Name,
     pub definition: ExternIdx,
 }
 
-pub struct Elem {
+pub(crate) struct Elem {
     pub r#type: RefType,
     pub items: Vec<Expr>,
     pub mode: ElemMode,
 }
 
-pub enum ElemMode {
+pub(crate) enum ElemMode {
     Active { table: TableIdx, offset: Expr },
     Passive,
     Declare,
 }
 
-pub struct Code {
+pub(crate) struct Code {
     pub locals: Vec<ValType>,
     pub body: Expr,
 }
 
-pub struct Data {
+pub(crate) struct Data {
     pub bytes: Vec<u8>,
     pub mode: DataMode,
 }
 
-pub enum DataMode {
+pub(crate) enum DataMode {
     Active { memory: MemIdx, offset: Expr },
     Passive,
 }
 
-pub struct DataCnt(pub u32);
+pub(crate) struct DataCnt(pub u32);
 
 pub struct Module {
-    pub customsecs: Vec<Custom>,
-    pub typesec: Vec<RecType>,
-    pub importsec: Vec<Import>,
-    pub funcsec: Vec<TypeIdx>,
-    pub tablesec: Vec<Table>,
-    pub memsec: Vec<MemType>,
-    pub tagsec: Vec<TagType>,
-    pub globalsec: Vec<Global>,
-    pub exportsec: Vec<Export>,
-    pub startsec: Option<FuncIdx>,
-    pub elemsec: Vec<Elem>,
-    pub datacntsec: Option<u32>,
-    pub codesec: Vec<Code>,
-    pub datasec: Vec<Data>,
+    pub(crate) customsecs: Vec<Custom>,
+    pub(crate) typesec: Vec<RecType>,
+    pub(crate) importsec: Vec<Import>,
+    pub(crate) funcsec: Vec<TypeIdx>,
+    pub(crate) tablesec: Vec<Table>,
+    pub(crate) memsec: Vec<MemType>,
+    pub(crate) tagsec: Vec<TagType>,
+    pub(crate) globalsec: Vec<Global>,
+    pub(crate) exportsec: Vec<Export>,
+    pub(crate) startsec: Option<FuncIdx>,
+    pub(crate) elemsec: Vec<Elem>,
+    pub(crate) datacntsec: Option<u32>,
+    pub(crate) codesec: Vec<Code>,
+    pub(crate) datasec: Vec<Data>,
 }

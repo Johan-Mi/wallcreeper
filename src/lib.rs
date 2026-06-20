@@ -2,9 +2,9 @@
 
 extern crate alloc;
 
-mod binary {
+pub mod binary {
     mod instructions;
-    mod modules;
+    pub mod modules;
     mod parser;
     mod types;
     mod values;
