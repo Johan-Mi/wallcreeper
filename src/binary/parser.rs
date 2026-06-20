@@ -68,12 +68,13 @@ impl instructions::MemArg {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         use modules::MemIdx;
         let align = u32(input)?;
-        let (memory, align) = if align < 1 << 6 {
-            (MemIdx(0), align)
-        } else if align < 1 << 7 {
-            (MemIdx::parse(input)?, align - (1 << 6))
-        } else {
+        let true = align < 1 << 7 else {
             return Err(Error);
+        };
+        let (memory, align) = if let Some(align) = align.checked_sub(1 << 6) {
+            (MemIdx::parse(input)?, align)
+        } else {
+            (MemIdx(0), align)
         };
         Ok(Self {
             memory,
@@ -659,9 +660,15 @@ where
     T: Default + From<u8> + core::ops::BitOrAssign + core::ops::Shl<usize, Output = T>,
 {
     let mut n = T::default();
-    for shift in 0..size_of::<T>() * 8 / 7 {
+    for shift in 0..const { size_of::<T>() * 8 / 7 } {
         let byte = u8(input)?;
-        n |= T::from(byte & !(1 << 7)) << (shift * 7);
+        #[expect(
+            clippy::arithmetic_side_effects,
+            reason = "Shift amount is bounded by size of `T`"
+        )]
+        {
+            n |= T::from(byte & !(1 << 7)) << (shift * 7);
+        }
         if byte & (1 << 7) == 0 {
             return Ok(n);
         }
@@ -673,7 +680,7 @@ fn leb128_s33_positive(input: &mut &[u8]) -> Result<u32, Error> {
     let mut n = 0;
     for shift in 0..33_usize.div_ceil(7) {
         let byte = u8(input)?;
-        n |= i64::from(byte & !(1 << 7)) << (shift * 7);
+        n |= i64::from(byte & !(1 << 7)) << shift.strict_mul(7);
         if byte & (1 << 7) == 0 {
             if byte & (1 << 6) != 0 {
                 return Err(Error);
