@@ -326,8 +326,8 @@ impl modules::DataCnt {
 }
 
 impl modules::Module {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        *input = input.strip_prefix(b"\0asm\x01\0\0\0").ok_or(Error)?;
+    fn parse(input: &[u8]) -> Result<Self, Error> {
+        let mut input = input.strip_prefix(b"\0asm\x01\0\0\0").ok_or(Error)?;
 
         let mut customsecs = Vec::new();
         let mut typesec = Vec::new();
@@ -348,7 +348,7 @@ impl modules::Module {
         while !input.is_empty() {
             use modules::SectionId;
 
-            let section_id = SectionId::parse(input)?;
+            let section_id = SectionId::parse(&mut input)?;
             if section_id != SectionId::Custom {
                 if Some(section_id) <= section_id_prev {
                     return Err(Error);
@@ -356,27 +356,33 @@ impl modules::Module {
                 section_id_prev = Some(section_id);
             }
 
-            let len_wanted = usize(u32(input)?);
+            let len_wanted = usize(u32(&mut input)?);
             let len_before = input.len();
             match section_id {
-                SectionId::Custom => customsecs.push(modules::Custom::parse(len_wanted, input)?),
-                SectionId::Type => typesec = vec(types::RecType::parse, input)?,
-                SectionId::Import => importsec = vec(modules::Import::parse, input)?,
-                SectionId::Function => funcsec = vec(modules::TypeIdx::parse, input)?,
-                SectionId::Table => tablesec = vec(modules::Table::parse, input)?,
-                SectionId::Memory => memsec = vec(types::MemType::parse, input)?,
-                SectionId::Tag => tagsec = vec(types::TagType::parse, input)?,
-                SectionId::Global => globalsec = vec(modules::Global::parse, input)?,
-                SectionId::Export => exportsec = vec(modules::Export::parse, input)?,
-                SectionId::Start => startsec = Some(modules::FuncIdx::parse(input)?),
-                SectionId::Element => elemsec = vec(modules::Elem::parse, input)?,
-                SectionId::DataCount => datacntsec = Some(u32(input)?),
-                SectionId::Code => codesec = vec(modules::Code::parse, input)?,
-                SectionId::Data => datasec = vec(modules::Data::parse, input)?,
+                SectionId::Custom => {
+                    customsecs.push(modules::Custom::parse(len_wanted, &mut input)?);
+                }
+                SectionId::Type => typesec = vec(types::RecType::parse, &mut input)?,
+                SectionId::Import => importsec = vec(modules::Import::parse, &mut input)?,
+                SectionId::Function => funcsec = vec(modules::TypeIdx::parse, &mut input)?,
+                SectionId::Table => tablesec = vec(modules::Table::parse, &mut input)?,
+                SectionId::Memory => memsec = vec(types::MemType::parse, &mut input)?,
+                SectionId::Tag => tagsec = vec(types::TagType::parse, &mut input)?,
+                SectionId::Global => globalsec = vec(modules::Global::parse, &mut input)?,
+                SectionId::Export => exportsec = vec(modules::Export::parse, &mut input)?,
+                SectionId::Start => startsec = Some(modules::FuncIdx::parse(&mut input)?),
+                SectionId::Element => elemsec = vec(modules::Elem::parse, &mut input)?,
+                SectionId::DataCount => datacntsec = Some(u32(&mut input)?),
+                SectionId::Code => codesec = vec(modules::Code::parse, &mut input)?,
+                SectionId::Data => datasec = vec(modules::Data::parse, &mut input)?,
             }
             if len_wanted != len_before.strict_sub(input.len()) {
                 return Err(Error);
             }
+        }
+
+        if !input.is_empty() {
+            return Err(Error);
         }
 
         Ok(Self {
