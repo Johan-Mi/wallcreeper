@@ -660,14 +660,14 @@ where
     T: Default + From<u8> + core::ops::BitOrAssign + core::ops::Shl<usize, Output = T>,
 {
     let mut n = T::default();
-    for shift in 0..const { size_of::<T>() * 8 / 7 } {
+    for shift in (0..const { size_of::<T>() * 8 }).step_by(7) {
         let byte = u8(input)?;
         #[expect(
             clippy::arithmetic_side_effects,
             reason = "Shift amount is bounded by size of `T`"
         )]
         {
-            n |= T::from(byte & !(1 << 7)) << (shift * 7);
+            n |= T::from(byte & !(1 << 7)) << shift;
         }
         if byte & (1 << 7) == 0 {
             return Ok(n);
@@ -678,9 +678,9 @@ where
 
 fn leb128_s33_positive(input: &mut &[u8]) -> Result<u32, Error> {
     let mut n = 0;
-    for shift in 0..33_usize.div_ceil(7) {
+    for shift in (0..33_usize).step_by(7) {
         let byte = u8(input)?;
-        n |= i64::from(byte & !(1 << 7)) << shift.strict_mul(7);
+        n |= i64::from(byte & !(1 << 7)) << shift;
         if byte & (1 << 7) == 0 {
             if byte & (1 << 6) != 0 {
                 return Err(Error);
