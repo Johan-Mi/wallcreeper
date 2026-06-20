@@ -71,7 +71,7 @@ impl instructions::MemArg {
         let (memory, align) = if align < 1 << 6 {
             (MemIdx(0), align)
         } else if align < 1 << 7 {
-            (MemIdx::parse(input)?, align - (1 << 7))
+            (MemIdx::parse(input)?, align - (1 << 6))
         } else {
             return Err(Error);
         };
