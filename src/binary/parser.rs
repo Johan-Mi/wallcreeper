@@ -1,7 +1,7 @@
 use super::{instructions, modules, types, values};
 use alloc::vec::Vec;
 
-struct Error;
+pub struct Error;
 
 impl instructions::Instr {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
@@ -326,7 +326,7 @@ impl modules::DataCnt {
 }
 
 impl modules::Module {
-    fn parse(input: &[u8]) -> Result<Self, Error> {
+    pub fn parse(input: &[u8]) -> Result<Self, Error> {
         let mut input = input.strip_prefix(b"\0asm\x01\0\0\0").ok_or(Error)?;
 
         let mut customsecs = Vec::new();
