@@ -234,9 +234,12 @@ impl modules::Table {
                 initializer: instructions::Expr::parse(input)?,
             })
         } else {
+            let r#type = types::TableType::parse(input)?;
+            let initializer =
+                instructions::Expr([instructions::Instr::Ref·Null(r#type.ref_type.r#type)].into());
             Ok(Self {
-                r#type: types::TableType::parse(input)?,
-                initializer: instructions::Expr([todo!()].into()),
+                r#type,
+                initializer,
             })
         }
     }
