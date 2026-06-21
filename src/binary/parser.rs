@@ -318,9 +318,21 @@ impl instructions::Instr {
     }
 
     fn vector(input: &mut &[u8]) -> Result<Self, Error> {
-        use instructions::LaneIdx;
+        use instructions::{LaneIdx, MemArg};
 
         Ok(match u32(input)? {
+            0 => Self::V128·Load(MemArg::parse(input)?),
+            1 => Self::V128·Load8x8S(MemArg::parse(input)?),
+            2 => Self::V128·Load8x8U(MemArg::parse(input)?),
+            3 => Self::V128·Load16x4S(MemArg::parse(input)?),
+            4 => Self::V128·Load16x4U(MemArg::parse(input)?),
+            5 => Self::V128·Load32x2S(MemArg::parse(input)?),
+            6 => Self::V128·Load32x2U(MemArg::parse(input)?),
+            7 => Self::V128·Load8Splat(MemArg::parse(input)?),
+            8 => Self::V128·Load16Splat(MemArg::parse(input)?),
+            9 => Self::V128·Load32Splat(MemArg::parse(input)?),
+            10 => Self::V128·Load64Splat(MemArg::parse(input)?),
+            11 => Self::V128·Store(MemArg::parse(input)?),
             12 => Self::V128·Const(u128::from_le_bytes(byte_array(input)?)),
             13 => Self::I8x16·Shuffle(byte_array(input)?.map(LaneIdx)),
             14 => Self::I8x16·Swizzle,
@@ -330,6 +342,20 @@ impl instructions::Instr {
             18 => Self::I64x2·Splat,
             19 => Self::F32x4·Splat,
             20 => Self::F64x2·Splat,
+            21 => Self::I8x16·ExtractLaneS(LaneIdx::parse(input)?),
+            22 => Self::I8x16·ExtractLaneU(LaneIdx::parse(input)?),
+            23 => Self::I8x16·ReplaceLane(LaneIdx::parse(input)?),
+            24 => Self::I16x8·ExtractLaneS(LaneIdx::parse(input)?),
+            25 => Self::I16x8·ExtractLaneU(LaneIdx::parse(input)?),
+            26 => Self::I16x8·ReplaceLane(LaneIdx::parse(input)?),
+            27 => Self::I32x4·ExtractLane(LaneIdx::parse(input)?),
+            28 => Self::I32x4·ReplaceLane(LaneIdx::parse(input)?),
+            29 => Self::I64x2·ExtractLane(LaneIdx::parse(input)?),
+            30 => Self::I64x2·ReplaceLane(LaneIdx::parse(input)?),
+            31 => Self::F32x4·ExtractLane(LaneIdx::parse(input)?),
+            32 => Self::F32x4·ReplaceLane(LaneIdx::parse(input)?),
+            33 => Self::F64x2·ExtractLane(LaneIdx::parse(input)?),
+            34 => Self::F64x2·ReplaceLane(LaneIdx::parse(input)?),
             35 => Self::I8x16·Eq,
             36 => Self::I8x16·Ne,
             37 => Self::I8x16·LtS,
@@ -379,6 +405,16 @@ impl instructions::Instr {
             81 => Self::V128·Xor,
             82 => Self::V128·Bitselect,
             83 => Self::V128·AnyTrue,
+            84 => Self::V128·Load8Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
+            85 => Self::V128·Load16Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
+            86 => Self::V128·Load32Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
+            87 => Self::V128·Load64Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
+            88 => Self::V128·Store8Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
+            89 => Self::V128·Store16Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
+            90 => Self::V128·Store32Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
+            91 => Self::V128·Store64Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
+            92 => Self::V128·Load32Zero(MemArg::parse(input)?),
+            93 => Self::V128·Load64Zero(MemArg::parse(input)?),
             94 => Self::F32x4·DemoteZeroF64x2,
             95 => Self::F64x2·PromoteLowF32x4,
             96 => Self::I8x16·Abs,
@@ -541,7 +577,7 @@ impl instructions::Instr {
             273 => Self::I16x8·RelaxedQ15MulrS,
             274 => Self::I16x8·RelaxedDotSI8x16,
             275 => Self::I32x4·RelaxedDotAddSI16x8,
-            _ => todo!(),
+            _ => return Err(Error),
         })
     }
 }
