@@ -267,8 +267,8 @@ impl instructions::Instr {
     }
 
     fn aggregate(input: &mut &[u8]) -> Result<Self, Error> {
-        use instructions::Nullable;
-        use modules::{DataIdx, ElemIdx, FieldIdx, TypeIdx};
+        use instructions::{CastOp, Nullable};
+        use modules::{DataIdx, ElemIdx, FieldIdx, LabelIdx, TypeIdx};
         use types::{HeapType, RefType};
 
         Ok(match u32(input)? {
@@ -308,6 +308,30 @@ impl instructions::Instr {
                 r#type: HeapType::parse(input)?,
                 nullability: Nullable(true),
             }),
+            24 => {
+                let castop = CastOp::parse(input)?;
+                let source = RefType {
+                    r#type: HeapType::parse(input)?,
+                    nullability: castop.source,
+                };
+                let target = RefType {
+                    r#type: HeapType::parse(input)?,
+                    nullability: castop.target,
+                };
+                Self::BrOnCast(LabelIdx::parse(input)?, source, target)
+            }
+            25 => {
+                let castop = CastOp::parse(input)?;
+                let source = RefType {
+                    r#type: HeapType::parse(input)?,
+                    nullability: castop.source,
+                };
+                let target = RefType {
+                    r#type: HeapType::parse(input)?,
+                    nullability: castop.target,
+                };
+                Self::BrOnCastFail(LabelIdx::parse(input)?, source, target)
+            }
             26 => Self::Any·ConvertExtern,
             27 => Self::Extern·ConvertAny,
             28 => Self::Ref·I31,
