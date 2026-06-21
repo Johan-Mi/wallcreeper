@@ -893,12 +893,107 @@ impl modules::Export {
 
 impl modules::Elem {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let bit = {
-            let bits = u32(input)?;
-            let ..8 = bits else { return Err(Error) };
-            move |i: u8| bits & (1 << i) != 0
+        use instructions::{Expr, Instr, Nullable};
+        use modules::{ElemMode, FuncIdx, TableIdx};
+        use types::{AbsHeapType, HeapType, RefType};
+
+        let elemkind = |input| {
+            if byte(0x00, input) {
+                Ok(RefType {
+                    r#type: HeapType::Abstract(AbsHeapType::Func),
+                    nullability: Nullable(false),
+                })
+            } else {
+                Err(Error)
+            }
         };
-        todo!()
+
+        Ok(match u32(input)? {
+            0 => {
+                let offset = Expr::parse(input)?;
+                let items = vec(FuncIdx::parse, input)?
+                    .into_iter()
+                    .map(|it| Expr([Instr::Ref·Func(it)].into()))
+                    .collect();
+                Self {
+                    r#type: RefType {
+                        r#type: HeapType::Abstract(AbsHeapType::Func),
+                        nullability: Nullable(false),
+                    },
+                    items,
+                    mode: ElemMode::Active {
+                        table: TableIdx(0),
+                        offset,
+                    },
+                }
+            }
+            bits @ (1 | 3) => {
+                let r#type = elemkind(input)?;
+                let items = vec(FuncIdx::parse, input)?
+                    .into_iter()
+                    .map(|it| Expr([Instr::Ref·Func(it)].into()))
+                    .collect();
+                Self {
+                    r#type,
+                    items,
+                    mode: if bits & 0b10 == 0 {
+                        ElemMode::Passive
+                    } else {
+                        ElemMode::Declare
+                    },
+                }
+            }
+            2 => {
+                let table = TableIdx::parse(input)?;
+                let offset = Expr::parse(input)?;
+                let r#type = elemkind(input)?;
+                let items = vec(FuncIdx::parse, input)?
+                    .into_iter()
+                    .map(|it| Expr([Instr::Ref·Func(it)].into()))
+                    .collect();
+                Self {
+                    r#type,
+                    items,
+                    mode: ElemMode::Active { table, offset },
+                }
+            }
+            4 => {
+                let offset = Expr::parse(input)?;
+                let items = vec(Expr::parse, input)?;
+                Self {
+                    r#type: RefType {
+                        r#type: HeapType::Abstract(AbsHeapType::Func),
+                        nullability: Nullable(true),
+                    },
+                    items,
+                    mode: ElemMode::Active {
+                        table: TableIdx(0),
+                        offset,
+                    },
+                }
+            }
+            bits @ (5 | 7) => Self {
+                r#type: elemkind(input)?,
+                items: vec(Expr::parse, input)?,
+                mode: if bits & 0b10 == 0 {
+                    ElemMode::Passive
+                } else {
+                    ElemMode::Declare
+                },
+            },
+            6 => {
+                let table = TableIdx::parse(input)?;
+                let offset = Expr::parse(input)?;
+                let r#type = elemkind(input)?;
+                let items = vec(Expr::parse, input)?;
+                Self {
+                    r#type,
+                    items,
+                    mode: ElemMode::Active { table, offset },
+                }
+            }
+            _ => return Err(Error),
+        })
     }
 }
 
