@@ -51,7 +51,7 @@ impl instructions::Instr {
             0x0b => return Err(Error), // end
             0x0c => Self::Br(LabelIdx::parse(input)?),
             0x0d => Self::BrIf(LabelIdx::parse(input)?),
-            0x0e => todo!("br_table l* l"),
+            0x0e => Self::BrTable(vec(LabelIdx::parse, input)?, LabelIdx::parse(input)?),
             0x0f => Self::Return,
             0x10 => Self::Call(FuncIdx::parse(input)?),
             0x11 => flip(Self::CallIndirect)(TypeIdx::parse(input)?, TableIdx::parse(input)?),
