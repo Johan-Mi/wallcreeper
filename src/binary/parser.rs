@@ -93,13 +93,13 @@ impl instructions::LaneIdx {
 impl instructions::Expr {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         let mut instrs = Vec::new();
-        loop {
-            match input.first() {
-                Some(0x0b) => return Ok(Self(instrs)),
-                None => return Err(Error),
-                _ => instrs.push(instructions::Instr::parse(input)?),
+        while !byte(0x0b, input) {
+            if input.is_empty() {
+                return Err(Error);
             }
+            instrs.push(instructions::Instr::parse(input)?);
         }
+        Ok(Self(instrs))
     }
 }
 
