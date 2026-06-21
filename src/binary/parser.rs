@@ -319,6 +319,7 @@ impl instructions::Instr {
 
     fn vector(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(match u32(input)? {
+            12 => Self::V128·Const(u128::from_le_bytes(byte_array(input)?)),
             14 => Self::I8x16·Swizzle,
             15 => Self::I8x16·Splat,
             16 => Self::I16x8·Splat,
