@@ -42,7 +42,27 @@ impl instructions::Instr {
                 }
                 Self::Loop(r#type, instrs)
             }
-            0x04 => todo!("if bt"),
+            0x04 => {
+                let r#type = BlockType::parse(input)?;
+                let mut then = Vec::new();
+                let mut r#else = Vec::new();
+                while !byte(0x0b, input) {
+                    if byte(0x05, input) {
+                        while !byte(0x0b, input) {
+                            if input.is_empty() {
+                                return Err(Error);
+                            }
+                            r#else.push(Self::parse(input)?);
+                        }
+                        break;
+                    }
+                    if input.is_empty() {
+                        return Err(Error);
+                    }
+                    then.push(Self::parse(input)?);
+                }
+                Self::IfElse(r#type, then, r#else)
+            }
             0x05 => return Err(Error), // else
             0x06..=0x07 => return Err(Error),
             0x08 => Self::Throw(TagIdx::parse(input)?),
