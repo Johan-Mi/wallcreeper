@@ -1,7 +1,6 @@
-use super::types::{
-    ExternType, GlobalType, MemType, RecType, RefType, TableType, TagType, ValType,
+use super::{
+    Expr, ExternType, GlobalType, MemType, Name, RecType, RefType, TableType, TagType, ValType,
 };
-use super::{instructions::Expr, values::Name};
 use alloc::vec::Vec;
 
 #[derive(Clone, Copy)]

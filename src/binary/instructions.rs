@@ -1,8 +1,7 @@
-use crate::binary::modules::{
-    DataIdx, ElemIdx, FieldIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TagIdx,
-    TypeIdx,
+use super::{
+    DataIdx, ElemIdx, FieldIdx, FuncIdx, GlobalIdx, HeapType, LabelIdx, LocalIdx, MemIdx, RefType,
+    TableIdx, TagIdx, TypeIdx, ValType,
 };
-use crate::binary::types::{HeapType, RefType, ValType};
 use alloc::vec::Vec;
 
 pub enum Instr {

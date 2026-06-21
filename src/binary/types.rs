@@ -1,4 +1,4 @@
-use super::{instructions, modules};
+use super::{Nullable, TypeIdx};
 use alloc::vec::Vec;
 
 #[derive(Clone, Copy)]
@@ -29,13 +29,13 @@ pub enum AbsHeapType {
 #[derive(Clone, Copy)]
 pub enum HeapType {
     Abstract(AbsHeapType),
-    Concrete(modules::TypeIdx),
+    Concrete(TypeIdx),
 }
 
 #[derive(Clone, Copy)]
 pub struct RefType {
     pub r#type: HeapType,
-    pub nullability: instructions::Nullable,
+    pub nullability: Nullable,
 }
 
 #[derive(Clone, Copy)]
@@ -76,7 +76,7 @@ pub struct RecType(pub Vec<SubType>);
 
 pub struct SubType {
     pub is_final: bool,
-    pub uses: Vec<modules::TypeIdx>,
+    pub uses: Vec<TypeIdx>,
     pub comp: CompType,
 }
 
@@ -91,7 +91,7 @@ pub enum AddressType {
     I64,
 }
 
-pub struct TagType(pub modules::TypeIdx);
+pub struct TagType(pub TypeIdx);
 
 pub struct GlobalType {
     pub value_type: ValType,
@@ -106,7 +106,7 @@ pub struct TableType {
 }
 
 pub enum ExternType {
-    Func(modules::TypeIdx),
+    Func(TypeIdx),
     Table(TableType),
     Mem(MemType),
     Global(GlobalType),

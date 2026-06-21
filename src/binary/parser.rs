@@ -1,18 +1,18 @@
-use super::{instructions, modules, types, values};
+use super::{
+    AbsHeapType, AddressType, BlockType, CastOp, Catch, Code, CompType, Custom, Data, DataIdx,
+    DataMode, Elem, ElemIdx, ElemMode, Export, Expr, ExternIdx, ExternType, FieldIdx, FieldType,
+    FuncIdx, Global, GlobalIdx, GlobalType, HeapType, Import, Instr, LabelIdx, LaneIdx, Limits,
+    LocalIdx, MemArg, MemIdx, MemType, Module, Mut, Name, Nullable, NumType, PackType, RecType,
+    RefType, ResultType, SectionId, StorageType, SubType, Table, TableIdx, TableType, TagIdx,
+    TagType, TypeIdx, ValType,
+};
 use alloc::vec::Vec;
 
 pub struct Error;
 
 #[expect(clippy::too_many_lines, reason = "Bytecode parsing")]
-impl instructions::Instr {
+impl Instr {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        use instructions::{BlockType, Catch, MemArg};
-        use modules::{
-            DataIdx, ElemIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TagIdx,
-            TypeIdx,
-        };
-        use types::{HeapType, ValType};
-
         fn flip<A, B, R>(f: impl Fn(A, B) -> R) -> impl Fn(B, A) -> R {
             move |b, a| f(a, b)
         }
@@ -298,10 +298,6 @@ impl instructions::Instr {
     }
 
     fn aggregate(input: &mut &[u8]) -> Result<Self, Error> {
-        use instructions::{CastOp, Nullable};
-        use modules::{DataIdx, ElemIdx, FieldIdx, LabelIdx, TypeIdx};
-        use types::{HeapType, RefType};
-
         Ok(match u32(input)? {
             0 => Self::Struct·New(TypeIdx::parse(input)?),
             1 => Self::Struct·NewDefault(TypeIdx::parse(input)?),
@@ -373,8 +369,6 @@ impl instructions::Instr {
     }
 
     fn vector(input: &mut &[u8]) -> Result<Self, Error> {
-        use instructions::{LaneIdx, MemArg};
-
         Ok(match u32(input)? {
             0 => Self::V128·Load(MemArg::parse(input)?),
             1 => Self::V128·Load8x8S(MemArg::parse(input)?),
@@ -637,39 +631,39 @@ impl instructions::Instr {
     }
 }
 
-impl instructions::BlockType {
+impl BlockType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         if byte(0x40, input) {
             Ok(Self::None)
         } else {
-            types::ValType::parse(input)
+            ValType::parse(input)
                 .map(Self::Val)
-                .or_else(|_| Ok(Self::Idx(modules::TypeIdx(leb128_s33_positive(input)?))))
+                .or_else(|_| Ok(Self::Idx(TypeIdx(leb128_s33_positive(input)?))))
         }
     }
 }
 
-impl instructions::Catch {
+impl Catch {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(match u8(input)? {
             0x00 => Self {
-                tag: Some(modules::TagIdx::parse(input)?),
-                label: modules::LabelIdx::parse(input)?,
+                tag: Some(TagIdx::parse(input)?),
+                label: LabelIdx::parse(input)?,
                 by_ref: false,
             },
             0x01 => Self {
-                tag: Some(modules::TagIdx::parse(input)?),
-                label: modules::LabelIdx::parse(input)?,
+                tag: Some(TagIdx::parse(input)?),
+                label: LabelIdx::parse(input)?,
                 by_ref: true,
             },
             0x02 => Self {
                 tag: None,
-                label: modules::LabelIdx::parse(input)?,
+                label: LabelIdx::parse(input)?,
                 by_ref: false,
             },
             0x03 => Self {
                 tag: None,
-                label: modules::LabelIdx::parse(input)?,
+                label: LabelIdx::parse(input)?,
                 by_ref: true,
             },
             _ => return Err(Error),
@@ -677,9 +671,8 @@ impl instructions::Catch {
     }
 }
 
-impl instructions::CastOp {
+impl CastOp {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        use instructions::Nullable;
         let (source, target) = match u8(input)? {
             0x00 => (false, false),
             0x01 => (true, false),
@@ -692,9 +685,8 @@ impl instructions::CastOp {
     }
 }
 
-impl instructions::MemArg {
+impl MemArg {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        use modules::MemIdx;
         let align = u32(input)?;
         let true = align < 1 << 7 else {
             return Err(Error);
@@ -712,105 +704,105 @@ impl instructions::MemArg {
     }
 }
 
-impl instructions::LaneIdx {
+impl LaneIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u8(input).map(Self)
     }
 }
 
-impl instructions::Expr {
+impl Expr {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         let mut instrs = Vec::new();
         while !byte(0x0b, input) {
             if input.is_empty() {
                 return Err(Error);
             }
-            instrs.push(instructions::Instr::parse(input)?);
+            instrs.push(Instr::parse(input)?);
         }
         Ok(Self(instrs))
     }
 }
 
-impl modules::TypeIdx {
+impl TypeIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::FuncIdx {
+impl FuncIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::TableIdx {
+impl TableIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::MemIdx {
+impl MemIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::GlobalIdx {
+impl GlobalIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::TagIdx {
+impl TagIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::ElemIdx {
+impl ElemIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::DataIdx {
+impl DataIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::LocalIdx {
+impl LocalIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::FieldIdx {
+impl FieldIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::LabelIdx {
+impl LabelIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u32(input).map(Self)
     }
 }
 
-impl modules::ExternIdx {
+impl ExternIdx {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         match u8(input)? {
-            0x00 => modules::FuncIdx::parse(input).map(Self::Func),
-            0x01 => modules::TableIdx::parse(input).map(Self::Table),
-            0x02 => modules::MemIdx::parse(input).map(Self::Memory),
-            0x03 => modules::GlobalIdx::parse(input).map(Self::Global),
-            0x04 => modules::TagIdx::parse(input).map(Self::Tag),
+            0x00 => FuncIdx::parse(input).map(Self::Func),
+            0x01 => TableIdx::parse(input).map(Self::Table),
+            0x02 => MemIdx::parse(input).map(Self::Memory),
+            0x03 => GlobalIdx::parse(input).map(Self::Global),
+            0x04 => TagIdx::parse(input).map(Self::Tag),
             _ => Err(Error),
         }
     }
 }
 
-impl modules::SectionId {
+impl SectionId {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(match u8(input)? {
             0 => Self::Custom,
@@ -832,40 +824,39 @@ impl modules::SectionId {
     }
 }
 
-impl modules::Custom {
+impl Custom {
     fn parse(len_total: usize, input: &mut &[u8]) -> Result<Self, Error> {
         let len_before = input.len();
-        let name = values::Name::parse(input)?;
+        let name = Name::parse(input)?;
         let len_bytes = len_total.strict_sub(len_before.strict_sub(input.len()));
         let bytes = input.split_off(..len_bytes).ok_or(Error)?.into();
         Ok(Self { name, bytes })
     }
 }
 
-impl modules::Import {
+impl Import {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(Self {
-            module: values::Name::parse(input)?,
-            item: values::Name::parse(input)?,
-            r#type: types::ExternType::parse(input)?,
+            module: Name::parse(input)?,
+            item: Name::parse(input)?,
+            r#type: ExternType::parse(input)?,
         })
     }
 }
 
-impl modules::Table {
+impl Table {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         if byte(0x40, input) {
             if !byte(0x00, input) {
                 return Err(Error);
             }
             Ok(Self {
-                r#type: types::TableType::parse(input)?,
-                initializer: instructions::Expr::parse(input)?,
+                r#type: TableType::parse(input)?,
+                initializer: Expr::parse(input)?,
             })
         } else {
-            let r#type = types::TableType::parse(input)?;
-            let initializer =
-                instructions::Expr([instructions::Instr::Ref·Null(r#type.ref_type.r#type)].into());
+            let r#type = TableType::parse(input)?;
+            let initializer = Expr([Instr::Ref·Null(r#type.ref_type.r#type)].into());
             Ok(Self {
                 r#type,
                 initializer,
@@ -874,29 +865,25 @@ impl modules::Table {
     }
 }
 
-impl modules::Global {
+impl Global {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(Self {
-            r#type: types::GlobalType::parse(input)?,
-            initializer: instructions::Expr::parse(input)?,
+            r#type: GlobalType::parse(input)?,
+            initializer: Expr::parse(input)?,
         })
     }
 }
 
-impl modules::Export {
+impl Export {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let name = values::Name::parse(input)?;
-        let definition = modules::ExternIdx::parse(input)?;
+        let name = Name::parse(input)?;
+        let definition = ExternIdx::parse(input)?;
         Ok(Self { name, definition })
     }
 }
 
-impl modules::Elem {
+impl Elem {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        use instructions::{Expr, Instr, Nullable};
-        use modules::{ElemMode, FuncIdx, TableIdx};
-        use types::{AbsHeapType, HeapType, RefType};
-
         let elemkind = |input| {
             if byte(0x00, input) {
                 Ok(RefType {
@@ -997,17 +984,17 @@ impl modules::Elem {
     }
 }
 
-impl modules::Code {
+impl Code {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         struct Locals {
             count: u32,
-            r#type: types::ValType,
+            r#type: ValType,
         }
 
         impl Locals {
             fn parse(input: &mut &[u8]) -> Result<Self, Error> {
                 let count = u32(input)?;
-                let r#type = types::ValType::parse(input)?;
+                let r#type = ValType::parse(input)?;
                 Ok(Self { count, r#type })
             }
         }
@@ -1015,7 +1002,7 @@ impl modules::Code {
         let len_wanted = usize(u32(input)?);
         let len_before = input.len();
         let locals = vec(Locals::parse, input)?;
-        let body = instructions::Expr::parse(input)?;
+        let body = Expr::parse(input)?;
         if len_wanted != len_before.strict_sub(input.len()) {
             return Err(Error);
         }
@@ -1027,17 +1014,17 @@ impl modules::Code {
     }
 }
 
-impl modules::Data {
+impl Data {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         let mode = match u32(input)? {
-            0 => modules::DataMode::Active {
-                memory: modules::MemIdx(0),
-                offset: instructions::Expr::parse(input)?,
+            0 => DataMode::Active {
+                memory: MemIdx(0),
+                offset: Expr::parse(input)?,
             },
-            1 => modules::DataMode::Passive,
-            2 => modules::DataMode::Active {
-                memory: modules::MemIdx::parse(input)?,
-                offset: instructions::Expr::parse(input)?,
+            1 => DataMode::Passive,
+            2 => DataMode::Active {
+                memory: MemIdx::parse(input)?,
+                offset: Expr::parse(input)?,
             },
             _ => return Err(Error),
         };
@@ -1046,7 +1033,7 @@ impl modules::Data {
     }
 }
 
-impl modules::Module {
+impl Module {
     /// # Errors
     ///
     /// This function will return an error if the input is syntactically invalid.
@@ -1070,8 +1057,6 @@ impl modules::Module {
 
         let mut section_id_prev = None;
         while !input.is_empty() {
-            use modules::SectionId;
-
             let section_id = SectionId::parse(&mut input)?;
             if section_id != SectionId::Custom {
                 if Some(section_id) <= section_id_prev {
@@ -1084,21 +1069,21 @@ impl modules::Module {
             let len_before = input.len();
             match section_id {
                 SectionId::Custom => {
-                    customsecs.push(modules::Custom::parse(len_wanted, &mut input)?);
+                    customsecs.push(Custom::parse(len_wanted, &mut input)?);
                 }
-                SectionId::Type => typesec = vec(types::RecType::parse, &mut input)?,
-                SectionId::Import => importsec = vec(modules::Import::parse, &mut input)?,
-                SectionId::Function => funcsec = vec(modules::TypeIdx::parse, &mut input)?,
-                SectionId::Table => tablesec = vec(modules::Table::parse, &mut input)?,
-                SectionId::Memory => memsec = vec(types::MemType::parse, &mut input)?,
-                SectionId::Tag => tagsec = vec(types::TagType::parse, &mut input)?,
-                SectionId::Global => globalsec = vec(modules::Global::parse, &mut input)?,
-                SectionId::Export => exportsec = vec(modules::Export::parse, &mut input)?,
-                SectionId::Start => startsec = Some(modules::FuncIdx::parse(&mut input)?),
-                SectionId::Element => elemsec = vec(modules::Elem::parse, &mut input)?,
+                SectionId::Type => typesec = vec(RecType::parse, &mut input)?,
+                SectionId::Import => importsec = vec(Import::parse, &mut input)?,
+                SectionId::Function => funcsec = vec(TypeIdx::parse, &mut input)?,
+                SectionId::Table => tablesec = vec(Table::parse, &mut input)?,
+                SectionId::Memory => memsec = vec(MemType::parse, &mut input)?,
+                SectionId::Tag => tagsec = vec(TagType::parse, &mut input)?,
+                SectionId::Global => globalsec = vec(Global::parse, &mut input)?,
+                SectionId::Export => exportsec = vec(Export::parse, &mut input)?,
+                SectionId::Start => startsec = Some(FuncIdx::parse(&mut input)?),
+                SectionId::Element => elemsec = vec(Elem::parse, &mut input)?,
                 SectionId::DataCount => datacntsec = Some(u32(&mut input)?),
-                SectionId::Code => codesec = vec(modules::Code::parse, &mut input)?,
-                SectionId::Data => datasec = vec(modules::Data::parse, &mut input)?,
+                SectionId::Code => codesec = vec(Code::parse, &mut input)?,
+                SectionId::Data => datasec = vec(Data::parse, &mut input)?,
             }
             if len_wanted != len_before.strict_sub(input.len()) {
                 return Err(Error);
@@ -1128,7 +1113,7 @@ impl modules::Module {
     }
 }
 
-impl types::NumType {
+impl NumType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(match u8(input)? {
             0x7b => Self::V128,
@@ -1141,7 +1126,7 @@ impl types::NumType {
     }
 }
 
-impl types::AbsHeapType {
+impl AbsHeapType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(match u8(input)? {
             0x69 => Self::Exn,
@@ -1161,86 +1146,77 @@ impl types::AbsHeapType {
     }
 }
 
-impl types::HeapType {
+impl HeapType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        types::AbsHeapType::parse(input)
+        AbsHeapType::parse(input)
             .map(Self::Abstract)
-            .or_else(|_| {
-                Ok(Self::Concrete(modules::TypeIdx(leb128_s33_positive(
-                    input,
-                )?)))
-            })
+            .or_else(|_| Ok(Self::Concrete(TypeIdx(leb128_s33_positive(input)?))))
     }
 }
 
-impl types::RefType {
+impl RefType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         let (r#type, nullable) = if byte(0x63, input) {
-            (types::HeapType::parse(input)?, true)
+            (HeapType::parse(input)?, true)
         } else if byte(0x64, input) {
-            (types::HeapType::parse(input)?, false)
+            (HeapType::parse(input)?, false)
         } else {
-            (
-                types::HeapType::Abstract(types::AbsHeapType::parse(input)?),
-                false,
-            )
+            (HeapType::Abstract(AbsHeapType::parse(input)?), false)
         };
         Ok(Self {
             r#type,
-            nullability: instructions::Nullable(nullable),
+            nullability: Nullable(nullable),
         })
     }
 }
 
-impl types::ValType {
+impl ValType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        (types::NumType::parse(input).map(Self::Num))
-            .or_else(|_| types::RefType::parse(input).map(Self::Ref))
+        (NumType::parse(input).map(Self::Num)).or_else(|_| RefType::parse(input).map(Self::Ref))
     }
 }
 
-impl types::ResultType {
+impl ResultType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        vec(types::ValType::parse, input).map(Self)
+        vec(ValType::parse, input).map(Self)
     }
 }
 
-impl types::Mut {
+impl Mut {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         u8(input)?.try_into().map_err(|_| Error).map(Self)
     }
 }
 
-impl types::CompType {
+impl CompType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(match u8(input)? {
-            0x5e => Self::Array(types::FieldType::parse(input)?),
-            0x5f => Self::Struct(vec(types::FieldType::parse, input)?),
+            0x5e => Self::Array(FieldType::parse(input)?),
+            0x5f => Self::Struct(vec(FieldType::parse, input)?),
             0x60 => Self::Func {
-                inputs: types::ResultType::parse(input)?,
-                outputs: types::ResultType::parse(input)?,
+                inputs: ResultType::parse(input)?,
+                outputs: ResultType::parse(input)?,
             },
             _ => return Err(Error),
         })
     }
 }
 
-impl types::FieldType {
+impl FieldType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let r#type = types::StorageType::parse(input)?;
-        let mutability = types::Mut::parse(input).ok();
+        let r#type = StorageType::parse(input)?;
+        let mutability = Mut::parse(input).ok();
         Ok(Self { r#type, mutability })
     }
 }
 
-impl types::StorageType {
+impl StorageType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        (types::ValType::parse(input).map(Self::Val))
-            .or_else(|_| types::PackType::parse(input).map(Self::Pack))
+        (ValType::parse(input).map(Self::Val)).or_else(|_| PackType::parse(input).map(Self::Pack))
     }
 }
 
-impl types::PackType {
+impl PackType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(match u8(input)? {
             0x77 => Self::I16,
@@ -1250,109 +1226,109 @@ impl types::PackType {
     }
 }
 
-impl types::RecType {
+impl RecType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(Self(if byte(0x4e, input) {
-            vec(types::SubType::parse, input)?
+            vec(SubType::parse, input)?
         } else {
-            [types::SubType::parse(input)?].into()
+            [SubType::parse(input)?].into()
         }))
     }
 }
 
-impl types::SubType {
+impl SubType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(if byte(0x4f, input) {
             Self {
                 is_final: true,
-                uses: vec(modules::TypeIdx::parse, input)?,
-                comp: types::CompType::parse(input)?,
+                uses: vec(TypeIdx::parse, input)?,
+                comp: CompType::parse(input)?,
             }
         } else if byte(0x50, input) {
             Self {
                 is_final: false,
-                uses: vec(modules::TypeIdx::parse, input)?,
-                comp: types::CompType::parse(input)?,
+                uses: vec(TypeIdx::parse, input)?,
+                comp: CompType::parse(input)?,
             }
         } else {
             Self {
                 is_final: true,
                 uses: Vec::new(),
-                comp: types::CompType::parse(input)?,
+                comp: CompType::parse(input)?,
             }
         })
     }
 }
 
-impl types::Limits {
+impl Limits {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(match u8(input)? {
             0x00 => Self {
                 start: u64(input)?,
                 end: None,
-                address_type: types::AddressType::I32,
+                address_type: AddressType::I32,
             },
             0x01 => Self {
                 start: u64(input)?,
                 end: Some(u64(input)?),
-                address_type: types::AddressType::I32,
+                address_type: AddressType::I32,
             },
             0x04 => Self {
                 start: u64(input)?,
                 end: None,
-                address_type: types::AddressType::I64,
+                address_type: AddressType::I64,
             },
             0x05 => Self {
                 start: u64(input)?,
                 end: Some(u64(input)?),
-                address_type: types::AddressType::I64,
+                address_type: AddressType::I64,
             },
             _ => return Err(Error),
         })
     }
 }
 
-impl types::TagType {
+impl TagType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         let 0x00 = u8(input)? else {
             return Err(Error);
         };
-        modules::TypeIdx::parse(input).map(Self)
+        TypeIdx::parse(input).map(Self)
     }
 }
 
-impl types::GlobalType {
+impl GlobalType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(Self {
-            value_type: types::ValType::parse(input)?,
-            mutability: types::Mut::parse(input).ok(),
+            value_type: ValType::parse(input)?,
+            mutability: Mut::parse(input).ok(),
         })
     }
 }
 
-impl types::MemType {
+impl MemType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        types::Limits::parse(input).map(Self)
+        Limits::parse(input).map(Self)
     }
 }
 
-impl types::TableType {
+impl TableType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(Self {
-            ref_type: types::RefType::parse(input)?,
-            limits: types::Limits::parse(input)?,
+            ref_type: RefType::parse(input)?,
+            limits: Limits::parse(input)?,
         })
     }
 }
 
-impl types::ExternType {
+impl ExternType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         match u8(input)? {
-            0x00 => modules::TypeIdx::parse(input).map(Self::Func),
-            0x01 => types::TableType::parse(input).map(Self::Table),
-            0x02 => types::MemType::parse(input).map(Self::Mem),
-            0x03 => types::GlobalType::parse(input).map(Self::Global),
-            0x04 => types::TagType::parse(input).map(Self::Tag),
+            0x00 => TypeIdx::parse(input).map(Self::Func),
+            0x01 => TableType::parse(input).map(Self::Table),
+            0x02 => MemType::parse(input).map(Self::Mem),
+            0x03 => GlobalType::parse(input).map(Self::Global),
+            0x04 => TagType::parse(input).map(Self::Tag),
             _ => Err(Error),
         }
     }
@@ -1410,10 +1386,10 @@ fn u64(input: &mut &[u8]) -> Result<u64, Error> {
     uleb128(input)
 }
 
-impl values::Name {
+impl Name {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         let bytes: Vec<u8> = vec(u8, input)?;
-        bytes.try_into().map_err(|_| Error).map(values::Name)
+        bytes.try_into().map_err(|_| Error).map(Name)
     }
 }
 
