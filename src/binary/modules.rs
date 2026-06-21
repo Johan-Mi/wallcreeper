@@ -106,8 +106,6 @@ pub(crate) enum DataMode {
     Passive,
 }
 
-pub(crate) struct DataCnt(pub u32);
-
 pub struct Module {
     pub(crate) customsecs: Vec<Custom>,
     pub(crate) typesec: Vec<RecType>,

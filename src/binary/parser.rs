@@ -951,12 +951,6 @@ impl modules::Data {
     }
 }
 
-impl modules::DataCnt {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
-    }
-}
-
 impl modules::Module {
     pub fn parse(input: &[u8]) -> Result<Self, Error> {
         let mut input = input.strip_prefix(b"\0asm\x01\0\0\0").ok_or(Error)?;
