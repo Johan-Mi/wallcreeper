@@ -1039,19 +1039,11 @@ impl modules::Module {
 impl types::NumType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         Ok(match u8(input)? {
+            0x7b => Self::V128,
             0x7c => Self::F64,
             0x7d => Self::F32,
             0x7e => Self::I64,
             0x7f => Self::I32,
-            _ => return Err(Error),
-        })
-    }
-}
-
-impl types::VecType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(match u8(input)? {
-            0x7b => Self::V128,
             _ => return Err(Error),
         })
     }
@@ -1111,7 +1103,6 @@ impl types::RefType {
 impl types::ValType {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         (types::NumType::parse(input).map(Self::Num))
-            .or_else(|_| types::VecType::parse(input).map(Self::Vec))
             .or_else(|_| types::RefType::parse(input).map(Self::Ref))
     }
 }

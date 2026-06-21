@@ -7,10 +7,6 @@ pub enum NumType {
     F32,
     I64,
     I32,
-}
-
-#[derive(Clone, Copy)]
-pub enum VecType {
     V128,
 }
 
@@ -45,7 +41,6 @@ pub struct RefType {
 #[derive(Clone, Copy)]
 pub enum ValType {
     Num(NumType),
-    Vec(VecType),
     Ref(RefType),
 }
 
