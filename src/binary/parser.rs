@@ -952,6 +952,9 @@ impl modules::Data {
 }
 
 impl modules::Module {
+    /// # Errors
+    ///
+    /// This function will return an error if the input is syntactically invalid.
     pub fn parse(input: &[u8]) -> Result<Self, Error> {
         let mut input = input.strip_prefix(b"\0asm\x01\0\0\0").ok_or(Error)?;
 
