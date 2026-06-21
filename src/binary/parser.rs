@@ -6,7 +6,7 @@ pub struct Error;
 #[expect(clippy::too_many_lines, reason = "Bytecode parsing")]
 impl instructions::Instr {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        use instructions::{BlockType, MemArg};
+        use instructions::{BlockType, Catch, MemArg};
         use modules::{
             DataIdx, ElemIdx, FuncIdx, GlobalIdx, LabelIdx, LocalIdx, MemIdx, TableIdx, TagIdx,
             TypeIdx,
@@ -84,7 +84,18 @@ impl instructions::Instr {
             0x1b => Self::Select(Vec::new()),
             0x1c => Self::Select(vec(ValType::parse, input)?),
             0x1d..=0x1e => return Err(Error),
-            0x1f => todo!("try_table bt"),
+            0x1f => {
+                let r#type = BlockType::parse(input)?;
+                let catches = vec(Catch::parse, input)?;
+                let mut instrs = Vec::new();
+                while !byte(0x0b, input) {
+                    if input.is_empty() {
+                        return Err(Error);
+                    }
+                    instrs.push(Self::parse(input)?);
+                }
+                Self::TryTable(r#type, catches, instrs)
+            }
             0x20 => Self::Local·Get(LocalIdx::parse(input)?),
             0x21 => Self::Local·Set(LocalIdx::parse(input)?),
             0x22 => Self::Local·Tee(LocalIdx::parse(input)?),
