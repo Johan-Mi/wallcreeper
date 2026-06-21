@@ -18,6 +18,16 @@ impl instructions::Instr {
         }
 
         Ok(match u8(input)? {
+            0x05 | // else
+            0x06..=0x07 |
+            0x09 |
+            0x0b | // end
+            0x16..=0x19 |
+            0x1d..=0x1e |
+            0x27 |
+            0xc5..=0xcf |
+            0xd7..=0xfa |
+            0xfe..=0xff => return Err(Error),
             0x00 => Self::Unreachable,
             0x01 => Self::Nop,
             0x02 => {
@@ -63,12 +73,8 @@ impl instructions::Instr {
                 }
                 Self::IfElse(r#type, then, r#else)
             }
-            0x05 => return Err(Error), // else
-            0x06..=0x07 => return Err(Error),
             0x08 => Self::Throw(TagIdx::parse(input)?),
-            0x09 => return Err(Error),
             0x0a => Self::ThrowRef,
-            0x0b => return Err(Error), // end
             0x0c => Self::Br(LabelIdx::parse(input)?),
             0x0d => Self::BrIf(LabelIdx::parse(input)?),
             0x0e => Self::BrTable(vec(LabelIdx::parse, input)?, LabelIdx::parse(input)?),
@@ -79,11 +85,9 @@ impl instructions::Instr {
             0x13 => flip(Self::ReturnCallIndirect)(TypeIdx::parse(input)?, TableIdx::parse(input)?),
             0x14 => Self::CallRef(TypeIdx::parse(input)?),
             0x15 => Self::ReturnCallRef(TypeIdx::parse(input)?),
-            0x16..=0x19 => return Err(Error),
             0x1a => Self::Drop,
             0x1b => Self::Select(Vec::new()),
             0x1c => Self::Select(vec(ValType::parse, input)?),
-            0x1d..=0x1e => return Err(Error),
             0x1f => {
                 let r#type = BlockType::parse(input)?;
                 let catches = vec(Catch::parse, input)?;
@@ -103,7 +107,6 @@ impl instructions::Instr {
             0x24 => Self::Global·Set(GlobalIdx::parse(input)?),
             0x25 => Self::Table·Get(TableIdx::parse(input)?),
             0x26 => Self::Table·Set(TableIdx::parse(input)?),
-            0x27 => return Err(Error),
             0x28 => Self::I32·Load(MemArg::parse(input)?),
             0x29 => Self::I64·Load(MemArg::parse(input)?),
             0x2a => Self::F32·Load(MemArg::parse(input)?),
@@ -261,7 +264,6 @@ impl instructions::Instr {
             0xc2 => Self::I64·Extend8S,
             0xc3 => Self::I64·Extend16S,
             0xc4 => Self::I64·Extend32S,
-            0xc5..=0xcf => return Err(Error),
             0xd0 => Self::Ref·Null(HeapType::parse(input)?),
             0xd1 => Self::Ref·IsNull,
             0xd2 => Self::Ref·Func(FuncIdx::parse(input)?),
@@ -269,7 +271,6 @@ impl instructions::Instr {
             0xd4 => Self::Ref·AsNonNull,
             0xd5 => Self::BrOnNull(LabelIdx::parse(input)?),
             0xd6 => Self::BrOnNonNull(LabelIdx::parse(input)?),
-            0xd7..=0xfa => return Err(Error),
             0xfb => Self::aggregate(input)?,
             0xfc => match u32(input)? {
                 0 => Self::I32·TruncSatSF32,
@@ -293,7 +294,6 @@ impl instructions::Instr {
                 _ => return Err(Error),
             },
             0xfd => Self::vector(input)?,
-            0xfe..=0xff => return Err(Error),
         })
     }
 
