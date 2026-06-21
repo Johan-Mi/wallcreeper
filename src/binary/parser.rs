@@ -1410,14 +1410,6 @@ fn u64(input: &mut &[u8]) -> Result<u64, Error> {
     uleb128(input)
 }
 
-fn f32(input: &mut &[u8]) -> Result<f32, Error> {
-    byte_array(input).map(f32::from_le_bytes)
-}
-
-fn f64(input: &mut &[u8]) -> Result<f64, Error> {
-    byte_array(input).map(f64::from_le_bytes)
-}
-
 impl values::Name {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         let bytes: Vec<u8> = vec(u8, input)?;
