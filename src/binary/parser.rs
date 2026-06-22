@@ -12,6 +12,12 @@ pub struct Error;
 
 struct Parser<'src> {
     input: &'src [u8],
+    stack: Vec<BlockKind>,
+}
+
+enum BlockKind {
+    If,
+    Other,
 }
 
 #[expect(clippy::too_many_lines, reason = "Bytecode parsing")]
@@ -32,13 +38,26 @@ impl Instr {
             | 0xfe..=0xff => return Err(Error),
             0x00 => Self::Unreachable,
             0x01 => Self::Nop,
-            0x02 => Self::Block(BlockType::parse(p)?),
-            0x03 => Self::Loop(BlockType::parse(p)?),
-            0x04 => Self::IfElse(BlockType::parse(p)?),
-            0x05 => Self::Else,
+            0x02 => {
+                p.stack.push(BlockKind::Other);
+                Self::Block(BlockType::parse(p)?)
+            }
+            0x03 => {
+                p.stack.push(BlockKind::Other);
+                Self::Loop(BlockType::parse(p)?)
+            }
+            0x04 => {
+                p.stack.push(BlockKind::If);
+                Self::IfElse(BlockType::parse(p)?)
+            }
+            0x05 => p
+                .stack
+                .pop_if(|it| matches!(it, BlockKind::If))
+                .map(|_| Self::Else)
+                .ok_or(Error)?,
             0x08 => Self::Throw(TagIdx::parse(p)?),
             0x0a => Self::ThrowRef,
-            0x0b => Self::End,
+            0x0b => p.stack.pop().map(|_| Self::End).ok_or(Error)?,
             0x0c => Self::Br(LabelIdx::parse(p)?),
             0x0d => Self::BrIf(LabelIdx::parse(p)?),
             0x0e => Self::BrTable(vec(LabelIdx::parse, p)?, LabelIdx::parse(p)?),
@@ -52,7 +71,10 @@ impl Instr {
             0x1a => Self::Drop,
             0x1b => Self::Select(Vec::new()),
             0x1c => Self::Select(vec(ValType::parse, p)?),
-            0x1f => Self::TryTable(BlockType::parse(p)?, vec(Catch::parse, p)?),
+            0x1f => {
+                p.stack.push(BlockKind::Other);
+                Self::TryTable(BlockType::parse(p)?, vec(Catch::parse, p)?)
+            }
             0x20 => Self::Local·Get(LocalIdx::parse(p)?),
             0x21 => Self::Local·Set(LocalIdx::parse(p)?),
             0x22 => Self::Local·Tee(LocalIdx::parse(p)?),
@@ -665,15 +687,22 @@ impl LaneIdx {
 
 impl Expr {
     fn parse(p: &mut Parser) -> Result<Self, Error> {
+        p.stack.push(BlockKind::Other);
+        let here = p.stack.len();
         let mut instrs = Vec::new();
-        // FIXME: This exits on *any* `end`, not just the last one.
-        while !byte(0x0b, p) {
-            if p.input.is_empty() {
-                return Err(Error);
+        loop {
+            let instr = Instr::parse(p)?;
+            let is_end = matches!(instr, Instr::End);
+            instrs.push(instr);
+            if is_end {
+                if p.stack.pop().is_none() {
+                    return Err(Error);
+                }
+                if p.stack.len() == here {
+                    return Ok(Self(instrs));
+                }
             }
-            instrs.push(Instr::parse(p)?);
         }
-        Ok(Self(instrs))
     }
 }
 
@@ -993,7 +1022,8 @@ impl Module {
     /// This function will return an error if the p is syntactically invalid.
     pub fn parse(input: &[u8]) -> Result<Self, Error> {
         let input = input.strip_prefix(b"\0asm\x01\0\0\0").ok_or(Error)?;
-        let mut p = Parser { input };
+        let stack = Vec::new();
+        let mut p = Parser { input, stack };
 
         let mut customsecs = Vec::new();
         let mut typesec = Vec::new();
