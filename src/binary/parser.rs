@@ -695,9 +695,7 @@ impl Expr {
             let is_end = matches!(instr, Instr::End);
             instrs.push(instr);
             if is_end {
-                if p.stack.pop().is_none() {
-                    return Err(Error);
-                }
+                assert!(p.stack.pop().is_some());
                 if p.stack.len() == here {
                     return Ok(Self(instrs));
                 }
