@@ -18,63 +18,23 @@ impl Instr {
         }
 
         Ok(match u8(input)? {
-            0x05 | // else
-            0x06..=0x07 |
-            0x09 |
-            0x0b | // end
-            0x16..=0x19 |
-            0x1d..=0x1e |
-            0x27 |
-            0xc5..=0xcf |
-            0xd7..=0xfa |
-            0xfe..=0xff => return Err(Error),
+            0x06..=0x07
+            | 0x09
+            | 0x16..=0x19
+            | 0x1d..=0x1e
+            | 0x27
+            | 0xc5..=0xcf
+            | 0xd7..=0xfa
+            | 0xfe..=0xff => return Err(Error),
             0x00 => Self::Unreachable,
             0x01 => Self::Nop,
-            0x02 => {
-                let r#type = BlockType::parse(input)?;
-                let mut instrs = Vec::new();
-                while !byte(0x0b, input) {
-                    if input.is_empty() {
-                        return Err(Error);
-                    }
-                    instrs.push(Self::parse(input)?);
-                }
-                Self::Block(r#type, instrs)
-            }
-            0x03 => {
-                let r#type = BlockType::parse(input)?;
-                let mut instrs = Vec::new();
-                while !byte(0x0b, input) {
-                    if input.is_empty() {
-                        return Err(Error);
-                    }
-                    instrs.push(Self::parse(input)?);
-                }
-                Self::Loop(r#type, instrs)
-            }
-            0x04 => {
-                let r#type = BlockType::parse(input)?;
-                let mut then = Vec::new();
-                let mut r#else = Vec::new();
-                while !byte(0x0b, input) {
-                    if byte(0x05, input) {
-                        while !byte(0x0b, input) {
-                            if input.is_empty() {
-                                return Err(Error);
-                            }
-                            r#else.push(Self::parse(input)?);
-                        }
-                        break;
-                    }
-                    if input.is_empty() {
-                        return Err(Error);
-                    }
-                    then.push(Self::parse(input)?);
-                }
-                Self::IfElse(r#type, then, r#else)
-            }
+            0x02 => Self::Block(BlockType::parse(input)?),
+            0x03 => Self::Loop(BlockType::parse(input)?),
+            0x04 => Self::IfElse(BlockType::parse(input)?),
+            0x05 => Self::Else,
             0x08 => Self::Throw(TagIdx::parse(input)?),
             0x0a => Self::ThrowRef,
+            0x0b => Self::End,
             0x0c => Self::Br(LabelIdx::parse(input)?),
             0x0d => Self::BrIf(LabelIdx::parse(input)?),
             0x0e => Self::BrTable(vec(LabelIdx::parse, input)?, LabelIdx::parse(input)?),
@@ -88,18 +48,7 @@ impl Instr {
             0x1a => Self::Drop,
             0x1b => Self::Select(Vec::new()),
             0x1c => Self::Select(vec(ValType::parse, input)?),
-            0x1f => {
-                let r#type = BlockType::parse(input)?;
-                let catches = vec(Catch::parse, input)?;
-                let mut instrs = Vec::new();
-                while !byte(0x0b, input) {
-                    if input.is_empty() {
-                        return Err(Error);
-                    }
-                    instrs.push(Self::parse(input)?);
-                }
-                Self::TryTable(r#type, catches, instrs)
-            }
+            0x1f => Self::TryTable(BlockType::parse(input)?, vec(Catch::parse, input)?),
             0x20 => Self::Local·Get(LocalIdx::parse(input)?),
             0x21 => Self::Local·Set(LocalIdx::parse(input)?),
             0x22 => Self::Local·Tee(LocalIdx::parse(input)?),
@@ -713,6 +662,7 @@ impl LaneIdx {
 impl Expr {
     fn parse(input: &mut &[u8]) -> Result<Self, Error> {
         let mut instrs = Vec::new();
+        // FIXME: This exits on *any* `end`, not just the last one.
         while !byte(0x0b, input) {
             if input.is_empty() {
                 return Err(Error);
