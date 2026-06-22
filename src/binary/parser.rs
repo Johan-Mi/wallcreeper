@@ -10,14 +10,18 @@ use alloc::vec::Vec;
 
 pub struct Error;
 
+struct Parser<'src> {
+    input: &'src [u8],
+}
+
 #[expect(clippy::too_many_lines, reason = "Bytecode parsing")]
 impl Instr {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
         fn flip<A, B, R>(f: impl Fn(A, B) -> R) -> impl Fn(B, A) -> R {
             move |b, a| f(a, b)
         }
 
-        Ok(match u8(input)? {
+        Ok(match u8(p)? {
             0x06..=0x07
             | 0x09
             | 0x16..=0x19
@@ -28,63 +32,63 @@ impl Instr {
             | 0xfe..=0xff => return Err(Error),
             0x00 => Self::Unreachable,
             0x01 => Self::Nop,
-            0x02 => Self::Block(BlockType::parse(input)?),
-            0x03 => Self::Loop(BlockType::parse(input)?),
-            0x04 => Self::IfElse(BlockType::parse(input)?),
+            0x02 => Self::Block(BlockType::parse(p)?),
+            0x03 => Self::Loop(BlockType::parse(p)?),
+            0x04 => Self::IfElse(BlockType::parse(p)?),
             0x05 => Self::Else,
-            0x08 => Self::Throw(TagIdx::parse(input)?),
+            0x08 => Self::Throw(TagIdx::parse(p)?),
             0x0a => Self::ThrowRef,
             0x0b => Self::End,
-            0x0c => Self::Br(LabelIdx::parse(input)?),
-            0x0d => Self::BrIf(LabelIdx::parse(input)?),
-            0x0e => Self::BrTable(vec(LabelIdx::parse, input)?, LabelIdx::parse(input)?),
+            0x0c => Self::Br(LabelIdx::parse(p)?),
+            0x0d => Self::BrIf(LabelIdx::parse(p)?),
+            0x0e => Self::BrTable(vec(LabelIdx::parse, p)?, LabelIdx::parse(p)?),
             0x0f => Self::Return,
-            0x10 => Self::Call(FuncIdx::parse(input)?),
-            0x11 => flip(Self::CallIndirect)(TypeIdx::parse(input)?, TableIdx::parse(input)?),
-            0x12 => Self::ReturnCall(FuncIdx::parse(input)?),
-            0x13 => flip(Self::ReturnCallIndirect)(TypeIdx::parse(input)?, TableIdx::parse(input)?),
-            0x14 => Self::CallRef(TypeIdx::parse(input)?),
-            0x15 => Self::ReturnCallRef(TypeIdx::parse(input)?),
+            0x10 => Self::Call(FuncIdx::parse(p)?),
+            0x11 => flip(Self::CallIndirect)(TypeIdx::parse(p)?, TableIdx::parse(p)?),
+            0x12 => Self::ReturnCall(FuncIdx::parse(p)?),
+            0x13 => flip(Self::ReturnCallIndirect)(TypeIdx::parse(p)?, TableIdx::parse(p)?),
+            0x14 => Self::CallRef(TypeIdx::parse(p)?),
+            0x15 => Self::ReturnCallRef(TypeIdx::parse(p)?),
             0x1a => Self::Drop,
             0x1b => Self::Select(Vec::new()),
-            0x1c => Self::Select(vec(ValType::parse, input)?),
-            0x1f => Self::TryTable(BlockType::parse(input)?, vec(Catch::parse, input)?),
-            0x20 => Self::Local·Get(LocalIdx::parse(input)?),
-            0x21 => Self::Local·Set(LocalIdx::parse(input)?),
-            0x22 => Self::Local·Tee(LocalIdx::parse(input)?),
-            0x23 => Self::Global·Get(GlobalIdx::parse(input)?),
-            0x24 => Self::Global·Set(GlobalIdx::parse(input)?),
-            0x25 => Self::Table·Get(TableIdx::parse(input)?),
-            0x26 => Self::Table·Set(TableIdx::parse(input)?),
-            0x28 => Self::I32·Load(MemArg::parse(input)?),
-            0x29 => Self::I64·Load(MemArg::parse(input)?),
-            0x2a => Self::F32·Load(MemArg::parse(input)?),
-            0x2b => Self::F64·Load(MemArg::parse(input)?),
-            0x2c => Self::I32·Load8S(MemArg::parse(input)?),
-            0x2d => Self::I32·Load8U(MemArg::parse(input)?),
-            0x2e => Self::I32·Load16S(MemArg::parse(input)?),
-            0x2f => Self::I32·Load16U(MemArg::parse(input)?),
-            0x30 => Self::I64·Load8S(MemArg::parse(input)?),
-            0x31 => Self::I64·Load8U(MemArg::parse(input)?),
-            0x32 => Self::I64·Load16S(MemArg::parse(input)?),
-            0x33 => Self::I64·Load16U(MemArg::parse(input)?),
-            0x34 => Self::I64·Load32S(MemArg::parse(input)?),
-            0x35 => Self::I64·Load32U(MemArg::parse(input)?),
-            0x36 => Self::I32·Store(MemArg::parse(input)?),
-            0x37 => Self::I64·Store(MemArg::parse(input)?),
-            0x38 => Self::F32·Store(MemArg::parse(input)?),
-            0x39 => Self::F64·Store(MemArg::parse(input)?),
-            0x3a => Self::I32·Store8(MemArg::parse(input)?),
-            0x3b => Self::I32·Store16(MemArg::parse(input)?),
-            0x3c => Self::I64·Store8(MemArg::parse(input)?),
-            0x3d => Self::I64·Store16(MemArg::parse(input)?),
-            0x3e => Self::I64·Store32(MemArg::parse(input)?),
-            0x3f => Self::Memory·Size(MemIdx::parse(input)?),
-            0x40 => Self::Memory·Grow(MemIdx::parse(input)?),
-            0x41 => Self::I32·Const(i32::from_le_bytes(byte_array(input)?)),
-            0x42 => Self::I64·Const(i64::from_le_bytes(byte_array(input)?)),
-            0x43 => Self::F32·Const(f32::from_le_bytes(byte_array(input)?)),
-            0x44 => Self::F64·Const(f64::from_le_bytes(byte_array(input)?)),
+            0x1c => Self::Select(vec(ValType::parse, p)?),
+            0x1f => Self::TryTable(BlockType::parse(p)?, vec(Catch::parse, p)?),
+            0x20 => Self::Local·Get(LocalIdx::parse(p)?),
+            0x21 => Self::Local·Set(LocalIdx::parse(p)?),
+            0x22 => Self::Local·Tee(LocalIdx::parse(p)?),
+            0x23 => Self::Global·Get(GlobalIdx::parse(p)?),
+            0x24 => Self::Global·Set(GlobalIdx::parse(p)?),
+            0x25 => Self::Table·Get(TableIdx::parse(p)?),
+            0x26 => Self::Table·Set(TableIdx::parse(p)?),
+            0x28 => Self::I32·Load(MemArg::parse(p)?),
+            0x29 => Self::I64·Load(MemArg::parse(p)?),
+            0x2a => Self::F32·Load(MemArg::parse(p)?),
+            0x2b => Self::F64·Load(MemArg::parse(p)?),
+            0x2c => Self::I32·Load8S(MemArg::parse(p)?),
+            0x2d => Self::I32·Load8U(MemArg::parse(p)?),
+            0x2e => Self::I32·Load16S(MemArg::parse(p)?),
+            0x2f => Self::I32·Load16U(MemArg::parse(p)?),
+            0x30 => Self::I64·Load8S(MemArg::parse(p)?),
+            0x31 => Self::I64·Load8U(MemArg::parse(p)?),
+            0x32 => Self::I64·Load16S(MemArg::parse(p)?),
+            0x33 => Self::I64·Load16U(MemArg::parse(p)?),
+            0x34 => Self::I64·Load32S(MemArg::parse(p)?),
+            0x35 => Self::I64·Load32U(MemArg::parse(p)?),
+            0x36 => Self::I32·Store(MemArg::parse(p)?),
+            0x37 => Self::I64·Store(MemArg::parse(p)?),
+            0x38 => Self::F32·Store(MemArg::parse(p)?),
+            0x39 => Self::F64·Store(MemArg::parse(p)?),
+            0x3a => Self::I32·Store8(MemArg::parse(p)?),
+            0x3b => Self::I32·Store16(MemArg::parse(p)?),
+            0x3c => Self::I64·Store8(MemArg::parse(p)?),
+            0x3d => Self::I64·Store16(MemArg::parse(p)?),
+            0x3e => Self::I64·Store32(MemArg::parse(p)?),
+            0x3f => Self::Memory·Size(MemIdx::parse(p)?),
+            0x40 => Self::Memory·Grow(MemIdx::parse(p)?),
+            0x41 => Self::I32·Const(i32::from_le_bytes(byte_array(p)?)),
+            0x42 => Self::I64·Const(i64::from_le_bytes(byte_array(p)?)),
+            0x43 => Self::F32·Const(f32::from_le_bytes(byte_array(p)?)),
+            0x44 => Self::F64·Const(f64::from_le_bytes(byte_array(p)?)),
             0x45 => Self::I32·Eqz,
             0x46 => Self::I32·Eq,
             0x47 => Self::I32·Ne,
@@ -213,15 +217,15 @@ impl Instr {
             0xc2 => Self::I64·Extend8S,
             0xc3 => Self::I64·Extend16S,
             0xc4 => Self::I64·Extend32S,
-            0xd0 => Self::Ref·Null(HeapType::parse(input)?),
+            0xd0 => Self::Ref·Null(HeapType::parse(p)?),
             0xd1 => Self::Ref·IsNull,
-            0xd2 => Self::Ref·Func(FuncIdx::parse(input)?),
+            0xd2 => Self::Ref·Func(FuncIdx::parse(p)?),
             0xd3 => Self::Ref·Eq,
             0xd4 => Self::Ref·AsNonNull,
-            0xd5 => Self::BrOnNull(LabelIdx::parse(input)?),
-            0xd6 => Self::BrOnNonNull(LabelIdx::parse(input)?),
-            0xfb => Self::aggregate(input)?,
-            0xfc => match u32(input)? {
+            0xd5 => Self::BrOnNull(LabelIdx::parse(p)?),
+            0xd6 => Self::BrOnNonNull(LabelIdx::parse(p)?),
+            0xfb => Self::aggregate(p)?,
+            0xfc => match u32(p)? {
                 0 => Self::I32·TruncSatSF32,
                 1 => Self::I32·TruncSatUF32,
                 2 => Self::I32·TruncSatSF64,
@@ -230,83 +234,83 @@ impl Instr {
                 5 => Self::I64·TruncSatUF32,
                 6 => Self::I64·TruncSatSF64,
                 7 => Self::I64·TruncSatUF64,
-                8 => flip(Self::Memory·Init)(DataIdx::parse(input)?, MemIdx::parse(input)?),
-                9 => Self::Data·Drop(DataIdx::parse(input)?),
-                10 => Self::Memory·Copy(MemIdx::parse(input)?, MemIdx::parse(input)?),
-                11 => Self::Memory·Fill(MemIdx::parse(input)?),
-                12 => flip(Self::Table·Init)(ElemIdx::parse(input)?, TableIdx::parse(input)?),
-                13 => Self::Elem·Drop(ElemIdx::parse(input)?),
-                14 => Self::Table·Copy(TableIdx::parse(input)?, TableIdx::parse(input)?),
-                15 => Self::Table·Grow(TableIdx::parse(input)?),
-                16 => Self::Table·Size(TableIdx::parse(input)?),
-                17 => Self::Table·Fill(TableIdx::parse(input)?),
+                8 => flip(Self::Memory·Init)(DataIdx::parse(p)?, MemIdx::parse(p)?),
+                9 => Self::Data·Drop(DataIdx::parse(p)?),
+                10 => Self::Memory·Copy(MemIdx::parse(p)?, MemIdx::parse(p)?),
+                11 => Self::Memory·Fill(MemIdx::parse(p)?),
+                12 => flip(Self::Table·Init)(ElemIdx::parse(p)?, TableIdx::parse(p)?),
+                13 => Self::Elem·Drop(ElemIdx::parse(p)?),
+                14 => Self::Table·Copy(TableIdx::parse(p)?, TableIdx::parse(p)?),
+                15 => Self::Table·Grow(TableIdx::parse(p)?),
+                16 => Self::Table·Size(TableIdx::parse(p)?),
+                17 => Self::Table·Fill(TableIdx::parse(p)?),
                 _ => return Err(Error),
             },
-            0xfd => Self::vector(input)?,
+            0xfd => Self::vector(p)?,
         })
     }
 
-    fn aggregate(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(match u32(input)? {
-            0 => Self::Struct·New(TypeIdx::parse(input)?),
-            1 => Self::Struct·NewDefault(TypeIdx::parse(input)?),
-            2 => Self::Struct·Get(TypeIdx::parse(input)?, FieldIdx::parse(input)?),
-            3 => Self::Struct·GetS(TypeIdx::parse(input)?, FieldIdx::parse(input)?),
-            4 => Self::Struct·GetU(TypeIdx::parse(input)?, FieldIdx::parse(input)?),
-            5 => Self::Struct·Set(TypeIdx::parse(input)?, FieldIdx::parse(input)?),
-            6 => Self::Array·New(TypeIdx::parse(input)?),
-            7 => Self::Array·NewDefault(TypeIdx::parse(input)?),
-            8 => Self::Array·NewFixed(TypeIdx::parse(input)?, u32(input)?),
-            9 => Self::Array·NewData(TypeIdx::parse(input)?, DataIdx::parse(input)?),
-            10 => Self::Array·NewElem(TypeIdx::parse(input)?, ElemIdx::parse(input)?),
-            11 => Self::Array·Get(TypeIdx::parse(input)?),
-            12 => Self::Array·GetS(TypeIdx::parse(input)?),
-            13 => Self::Array·GetU(TypeIdx::parse(input)?),
-            14 => Self::Array·Set(TypeIdx::parse(input)?),
+    fn aggregate(p: &mut Parser) -> Result<Self, Error> {
+        Ok(match u32(p)? {
+            0 => Self::Struct·New(TypeIdx::parse(p)?),
+            1 => Self::Struct·NewDefault(TypeIdx::parse(p)?),
+            2 => Self::Struct·Get(TypeIdx::parse(p)?, FieldIdx::parse(p)?),
+            3 => Self::Struct·GetS(TypeIdx::parse(p)?, FieldIdx::parse(p)?),
+            4 => Self::Struct·GetU(TypeIdx::parse(p)?, FieldIdx::parse(p)?),
+            5 => Self::Struct·Set(TypeIdx::parse(p)?, FieldIdx::parse(p)?),
+            6 => Self::Array·New(TypeIdx::parse(p)?),
+            7 => Self::Array·NewDefault(TypeIdx::parse(p)?),
+            8 => Self::Array·NewFixed(TypeIdx::parse(p)?, u32(p)?),
+            9 => Self::Array·NewData(TypeIdx::parse(p)?, DataIdx::parse(p)?),
+            10 => Self::Array·NewElem(TypeIdx::parse(p)?, ElemIdx::parse(p)?),
+            11 => Self::Array·Get(TypeIdx::parse(p)?),
+            12 => Self::Array·GetS(TypeIdx::parse(p)?),
+            13 => Self::Array·GetU(TypeIdx::parse(p)?),
+            14 => Self::Array·Set(TypeIdx::parse(p)?),
             15 => Self::Array·Len,
-            16 => Self::Array·Fill(TypeIdx::parse(input)?),
-            17 => Self::Array·Copy(TypeIdx::parse(input)?, TypeIdx::parse(input)?),
-            18 => Self::Array·InitData(TypeIdx::parse(input)?, DataIdx::parse(input)?),
-            19 => Self::Array·InitElem(TypeIdx::parse(input)?, ElemIdx::parse(input)?),
+            16 => Self::Array·Fill(TypeIdx::parse(p)?),
+            17 => Self::Array·Copy(TypeIdx::parse(p)?, TypeIdx::parse(p)?),
+            18 => Self::Array·InitData(TypeIdx::parse(p)?, DataIdx::parse(p)?),
+            19 => Self::Array·InitElem(TypeIdx::parse(p)?, ElemIdx::parse(p)?),
             20 => Self::Ref·Test(RefType {
-                r#type: HeapType::parse(input)?,
+                r#type: HeapType::parse(p)?,
                 nullability: Nullable(false),
             }),
             21 => Self::Ref·Test(RefType {
-                r#type: HeapType::parse(input)?,
+                r#type: HeapType::parse(p)?,
                 nullability: Nullable(true),
             }),
             22 => Self::Ref·Cast(RefType {
-                r#type: HeapType::parse(input)?,
+                r#type: HeapType::parse(p)?,
                 nullability: Nullable(false),
             }),
             23 => Self::Ref·Cast(RefType {
-                r#type: HeapType::parse(input)?,
+                r#type: HeapType::parse(p)?,
                 nullability: Nullable(true),
             }),
             24 => {
-                let castop = CastOp::parse(input)?;
+                let castop = CastOp::parse(p)?;
                 let source = RefType {
-                    r#type: HeapType::parse(input)?,
+                    r#type: HeapType::parse(p)?,
                     nullability: castop.source,
                 };
                 let target = RefType {
-                    r#type: HeapType::parse(input)?,
+                    r#type: HeapType::parse(p)?,
                     nullability: castop.target,
                 };
-                Self::BrOnCast(LabelIdx::parse(input)?, source, target)
+                Self::BrOnCast(LabelIdx::parse(p)?, source, target)
             }
             25 => {
-                let castop = CastOp::parse(input)?;
+                let castop = CastOp::parse(p)?;
                 let source = RefType {
-                    r#type: HeapType::parse(input)?,
+                    r#type: HeapType::parse(p)?,
                     nullability: castop.source,
                 };
                 let target = RefType {
-                    r#type: HeapType::parse(input)?,
+                    r#type: HeapType::parse(p)?,
                     nullability: castop.target,
                 };
-                Self::BrOnCastFail(LabelIdx::parse(input)?, source, target)
+                Self::BrOnCastFail(LabelIdx::parse(p)?, source, target)
             }
             26 => Self::Any·ConvertExtern,
             27 => Self::Extern·ConvertAny,
@@ -317,22 +321,22 @@ impl Instr {
         })
     }
 
-    fn vector(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(match u32(input)? {
-            0 => Self::V128·Load(MemArg::parse(input)?),
-            1 => Self::V128·Load8x8S(MemArg::parse(input)?),
-            2 => Self::V128·Load8x8U(MemArg::parse(input)?),
-            3 => Self::V128·Load16x4S(MemArg::parse(input)?),
-            4 => Self::V128·Load16x4U(MemArg::parse(input)?),
-            5 => Self::V128·Load32x2S(MemArg::parse(input)?),
-            6 => Self::V128·Load32x2U(MemArg::parse(input)?),
-            7 => Self::V128·Load8Splat(MemArg::parse(input)?),
-            8 => Self::V128·Load16Splat(MemArg::parse(input)?),
-            9 => Self::V128·Load32Splat(MemArg::parse(input)?),
-            10 => Self::V128·Load64Splat(MemArg::parse(input)?),
-            11 => Self::V128·Store(MemArg::parse(input)?),
-            12 => Self::V128·Const(u128::from_le_bytes(byte_array(input)?)),
-            13 => Self::I8x16·Shuffle(byte_array(input)?.map(LaneIdx)),
+    fn vector(p: &mut Parser) -> Result<Self, Error> {
+        Ok(match u32(p)? {
+            0 => Self::V128·Load(MemArg::parse(p)?),
+            1 => Self::V128·Load8x8S(MemArg::parse(p)?),
+            2 => Self::V128·Load8x8U(MemArg::parse(p)?),
+            3 => Self::V128·Load16x4S(MemArg::parse(p)?),
+            4 => Self::V128·Load16x4U(MemArg::parse(p)?),
+            5 => Self::V128·Load32x2S(MemArg::parse(p)?),
+            6 => Self::V128·Load32x2U(MemArg::parse(p)?),
+            7 => Self::V128·Load8Splat(MemArg::parse(p)?),
+            8 => Self::V128·Load16Splat(MemArg::parse(p)?),
+            9 => Self::V128·Load32Splat(MemArg::parse(p)?),
+            10 => Self::V128·Load64Splat(MemArg::parse(p)?),
+            11 => Self::V128·Store(MemArg::parse(p)?),
+            12 => Self::V128·Const(u128::from_le_bytes(byte_array(p)?)),
+            13 => Self::I8x16·Shuffle(byte_array(p)?.map(LaneIdx)),
             14 => Self::I8x16·Swizzle,
             15 => Self::I8x16·Splat,
             16 => Self::I16x8·Splat,
@@ -340,20 +344,20 @@ impl Instr {
             18 => Self::I64x2·Splat,
             19 => Self::F32x4·Splat,
             20 => Self::F64x2·Splat,
-            21 => Self::I8x16·ExtractLaneS(LaneIdx::parse(input)?),
-            22 => Self::I8x16·ExtractLaneU(LaneIdx::parse(input)?),
-            23 => Self::I8x16·ReplaceLane(LaneIdx::parse(input)?),
-            24 => Self::I16x8·ExtractLaneS(LaneIdx::parse(input)?),
-            25 => Self::I16x8·ExtractLaneU(LaneIdx::parse(input)?),
-            26 => Self::I16x8·ReplaceLane(LaneIdx::parse(input)?),
-            27 => Self::I32x4·ExtractLane(LaneIdx::parse(input)?),
-            28 => Self::I32x4·ReplaceLane(LaneIdx::parse(input)?),
-            29 => Self::I64x2·ExtractLane(LaneIdx::parse(input)?),
-            30 => Self::I64x2·ReplaceLane(LaneIdx::parse(input)?),
-            31 => Self::F32x4·ExtractLane(LaneIdx::parse(input)?),
-            32 => Self::F32x4·ReplaceLane(LaneIdx::parse(input)?),
-            33 => Self::F64x2·ExtractLane(LaneIdx::parse(input)?),
-            34 => Self::F64x2·ReplaceLane(LaneIdx::parse(input)?),
+            21 => Self::I8x16·ExtractLaneS(LaneIdx::parse(p)?),
+            22 => Self::I8x16·ExtractLaneU(LaneIdx::parse(p)?),
+            23 => Self::I8x16·ReplaceLane(LaneIdx::parse(p)?),
+            24 => Self::I16x8·ExtractLaneS(LaneIdx::parse(p)?),
+            25 => Self::I16x8·ExtractLaneU(LaneIdx::parse(p)?),
+            26 => Self::I16x8·ReplaceLane(LaneIdx::parse(p)?),
+            27 => Self::I32x4·ExtractLane(LaneIdx::parse(p)?),
+            28 => Self::I32x4·ReplaceLane(LaneIdx::parse(p)?),
+            29 => Self::I64x2·ExtractLane(LaneIdx::parse(p)?),
+            30 => Self::I64x2·ReplaceLane(LaneIdx::parse(p)?),
+            31 => Self::F32x4·ExtractLane(LaneIdx::parse(p)?),
+            32 => Self::F32x4·ReplaceLane(LaneIdx::parse(p)?),
+            33 => Self::F64x2·ExtractLane(LaneIdx::parse(p)?),
+            34 => Self::F64x2·ReplaceLane(LaneIdx::parse(p)?),
             35 => Self::I8x16·Eq,
             36 => Self::I8x16·Ne,
             37 => Self::I8x16·LtS,
@@ -403,16 +407,16 @@ impl Instr {
             81 => Self::V128·Xor,
             82 => Self::V128·Bitselect,
             83 => Self::V128·AnyTrue,
-            84 => Self::V128·Load8Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
-            85 => Self::V128·Load16Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
-            86 => Self::V128·Load32Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
-            87 => Self::V128·Load64Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
-            88 => Self::V128·Store8Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
-            89 => Self::V128·Store16Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
-            90 => Self::V128·Store32Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
-            91 => Self::V128·Store64Lane(MemArg::parse(input)?, LaneIdx::parse(input)?),
-            92 => Self::V128·Load32Zero(MemArg::parse(input)?),
-            93 => Self::V128·Load64Zero(MemArg::parse(input)?),
+            84 => Self::V128·Load8Lane(MemArg::parse(p)?, LaneIdx::parse(p)?),
+            85 => Self::V128·Load16Lane(MemArg::parse(p)?, LaneIdx::parse(p)?),
+            86 => Self::V128·Load32Lane(MemArg::parse(p)?, LaneIdx::parse(p)?),
+            87 => Self::V128·Load64Lane(MemArg::parse(p)?, LaneIdx::parse(p)?),
+            88 => Self::V128·Store8Lane(MemArg::parse(p)?, LaneIdx::parse(p)?),
+            89 => Self::V128·Store16Lane(MemArg::parse(p)?, LaneIdx::parse(p)?),
+            90 => Self::V128·Store32Lane(MemArg::parse(p)?, LaneIdx::parse(p)?),
+            91 => Self::V128·Store64Lane(MemArg::parse(p)?, LaneIdx::parse(p)?),
+            92 => Self::V128·Load32Zero(MemArg::parse(p)?),
+            93 => Self::V128·Load64Zero(MemArg::parse(p)?),
             94 => Self::F32x4·DemoteZeroF64x2,
             95 => Self::F64x2·PromoteLowF32x4,
             96 => Self::I8x16·Abs,
@@ -581,38 +585,38 @@ impl Instr {
 }
 
 impl BlockType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        if byte(0x40, input) {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        if byte(0x40, p) {
             Ok(Self::None)
         } else {
-            ValType::parse(input)
+            ValType::parse(p)
                 .map(Self::Val)
-                .or_else(|_| Ok(Self::Idx(TypeIdx(leb128_s33_positive(input)?))))
+                .or_else(|_| Ok(Self::Idx(TypeIdx(leb128_s33_positive(p)?))))
         }
     }
 }
 
 impl Catch {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(match u8(input)? {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        Ok(match u8(p)? {
             0x00 => Self {
-                tag: Some(TagIdx::parse(input)?),
-                label: LabelIdx::parse(input)?,
+                tag: Some(TagIdx::parse(p)?),
+                label: LabelIdx::parse(p)?,
                 by_ref: false,
             },
             0x01 => Self {
-                tag: Some(TagIdx::parse(input)?),
-                label: LabelIdx::parse(input)?,
+                tag: Some(TagIdx::parse(p)?),
+                label: LabelIdx::parse(p)?,
                 by_ref: true,
             },
             0x02 => Self {
                 tag: None,
-                label: LabelIdx::parse(input)?,
+                label: LabelIdx::parse(p)?,
                 by_ref: false,
             },
             0x03 => Self {
                 tag: None,
-                label: LabelIdx::parse(input)?,
+                label: LabelIdx::parse(p)?,
                 by_ref: true,
             },
             _ => return Err(Error),
@@ -621,8 +625,8 @@ impl Catch {
 }
 
 impl CastOp {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let (source, target) = match u8(input)? {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        let (source, target) = match u8(p)? {
             0x00 => (false, false),
             0x01 => (true, false),
             0x02 => (false, true),
@@ -635,126 +639,126 @@ impl CastOp {
 }
 
 impl MemArg {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let align = u32(input)?;
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        let align = u32(p)?;
         let true = align < 1 << 7 else {
             return Err(Error);
         };
         let (memory, align) = if let Some(align) = align.checked_sub(1 << 6) {
-            (MemIdx::parse(input)?, align)
+            (MemIdx::parse(p)?, align)
         } else {
             (MemIdx(0), align)
         };
         Ok(Self {
             memory,
             align,
-            offset: u64(input)?,
+            offset: u64(p)?,
         })
     }
 }
 
 impl LaneIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u8(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u8(p).map(Self)
     }
 }
 
 impl Expr {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
         let mut instrs = Vec::new();
         // FIXME: This exits on *any* `end`, not just the last one.
-        while !byte(0x0b, input) {
-            if input.is_empty() {
+        while !byte(0x0b, p) {
+            if p.input.is_empty() {
                 return Err(Error);
             }
-            instrs.push(Instr::parse(input)?);
+            instrs.push(Instr::parse(p)?);
         }
         Ok(Self(instrs))
     }
 }
 
 impl TypeIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl FuncIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl TableIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl MemIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl GlobalIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl TagIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl ElemIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl DataIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl LocalIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl FieldIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl LabelIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u32(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u32(p).map(Self)
     }
 }
 
 impl ExternIdx {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        match u8(input)? {
-            0x00 => FuncIdx::parse(input).map(Self::Func),
-            0x01 => TableIdx::parse(input).map(Self::Table),
-            0x02 => MemIdx::parse(input).map(Self::Memory),
-            0x03 => GlobalIdx::parse(input).map(Self::Global),
-            0x04 => TagIdx::parse(input).map(Self::Tag),
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        match u8(p)? {
+            0x00 => FuncIdx::parse(p).map(Self::Func),
+            0x01 => TableIdx::parse(p).map(Self::Table),
+            0x02 => MemIdx::parse(p).map(Self::Memory),
+            0x03 => GlobalIdx::parse(p).map(Self::Global),
+            0x04 => TagIdx::parse(p).map(Self::Tag),
             _ => Err(Error),
         }
     }
 }
 
 impl SectionId {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(match u8(input)? {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        Ok(match u8(p)? {
             0 => Self::Custom,
             1 => Self::Type,
             2 => Self::Import,
@@ -775,37 +779,37 @@ impl SectionId {
 }
 
 impl Custom {
-    fn parse(len_total: usize, input: &mut &[u8]) -> Result<Self, Error> {
-        let len_before = input.len();
-        let name = Name::parse(input)?;
-        let len_bytes = len_total.strict_sub(len_before.strict_sub(input.len()));
-        let bytes = input.split_off(..len_bytes).ok_or(Error)?.into();
+    fn parse(len_total: usize, p: &mut Parser) -> Result<Self, Error> {
+        let len_before = p.input.len();
+        let name = Name::parse(p)?;
+        let len_bytes = len_total.strict_sub(len_before.strict_sub(p.input.len()));
+        let bytes = p.input.split_off(..len_bytes).ok_or(Error)?.into();
         Ok(Self { name, bytes })
     }
 }
 
 impl Import {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
         Ok(Self {
-            module: Name::parse(input)?,
-            item: Name::parse(input)?,
-            r#type: ExternType::parse(input)?,
+            module: Name::parse(p)?,
+            item: Name::parse(p)?,
+            r#type: ExternType::parse(p)?,
         })
     }
 }
 
 impl Table {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        if byte(0x40, input) {
-            if !byte(0x00, input) {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        if byte(0x40, p) {
+            if !byte(0x00, p) {
                 return Err(Error);
             }
             Ok(Self {
-                r#type: TableType::parse(input)?,
-                initializer: Expr::parse(input)?,
+                r#type: TableType::parse(p)?,
+                initializer: Expr::parse(p)?,
             })
         } else {
-            let r#type = TableType::parse(input)?;
+            let r#type = TableType::parse(p)?;
             let initializer = Expr([Instr::Ref·Null(r#type.ref_type.r#type)].into());
             Ok(Self {
                 r#type,
@@ -816,26 +820,26 @@ impl Table {
 }
 
 impl Global {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
         Ok(Self {
-            r#type: GlobalType::parse(input)?,
-            initializer: Expr::parse(input)?,
+            r#type: GlobalType::parse(p)?,
+            initializer: Expr::parse(p)?,
         })
     }
 }
 
 impl Export {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let name = Name::parse(input)?;
-        let definition = ExternIdx::parse(input)?;
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        let name = Name::parse(p)?;
+        let definition = ExternIdx::parse(p)?;
         Ok(Self { name, definition })
     }
 }
 
 impl Elem {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let elemkind = |input| {
-            if byte(0x00, input) {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        let elemkind = |p| {
+            if byte(0x00, p) {
                 Ok(RefType {
                     r#type: HeapType::Abstract(AbsHeapType::Func),
                     nullability: Nullable(false),
@@ -845,10 +849,10 @@ impl Elem {
             }
         };
 
-        Ok(match u32(input)? {
+        Ok(match u32(p)? {
             0 => {
-                let offset = Expr::parse(input)?;
-                let items = vec(FuncIdx::parse, input)?
+                let offset = Expr::parse(p)?;
+                let items = vec(FuncIdx::parse, p)?
                     .into_iter()
                     .map(|it| Expr([Instr::Ref·Func(it)].into()))
                     .collect();
@@ -865,8 +869,8 @@ impl Elem {
                 }
             }
             bits @ (1 | 3) => {
-                let r#type = elemkind(input)?;
-                let items = vec(FuncIdx::parse, input)?
+                let r#type = elemkind(p)?;
+                let items = vec(FuncIdx::parse, p)?
                     .into_iter()
                     .map(|it| Expr([Instr::Ref·Func(it)].into()))
                     .collect();
@@ -881,10 +885,10 @@ impl Elem {
                 }
             }
             2 => {
-                let table = TableIdx::parse(input)?;
-                let offset = Expr::parse(input)?;
-                let r#type = elemkind(input)?;
-                let items = vec(FuncIdx::parse, input)?
+                let table = TableIdx::parse(p)?;
+                let offset = Expr::parse(p)?;
+                let r#type = elemkind(p)?;
+                let items = vec(FuncIdx::parse, p)?
                     .into_iter()
                     .map(|it| Expr([Instr::Ref·Func(it)].into()))
                     .collect();
@@ -895,8 +899,8 @@ impl Elem {
                 }
             }
             4 => {
-                let offset = Expr::parse(input)?;
-                let items = vec(Expr::parse, input)?;
+                let offset = Expr::parse(p)?;
+                let items = vec(Expr::parse, p)?;
                 Self {
                     r#type: RefType {
                         r#type: HeapType::Abstract(AbsHeapType::Func),
@@ -910,8 +914,8 @@ impl Elem {
                 }
             }
             bits @ (5 | 7) => Self {
-                r#type: elemkind(input)?,
-                items: vec(Expr::parse, input)?,
+                r#type: elemkind(p)?,
+                items: vec(Expr::parse, p)?,
                 mode: if bits & 0b10 == 0 {
                     ElemMode::Passive
                 } else {
@@ -919,10 +923,10 @@ impl Elem {
                 },
             },
             6 => {
-                let table = TableIdx::parse(input)?;
-                let offset = Expr::parse(input)?;
-                let r#type = elemkind(input)?;
-                let items = vec(Expr::parse, input)?;
+                let table = TableIdx::parse(p)?;
+                let offset = Expr::parse(p)?;
+                let r#type = elemkind(p)?;
+                let items = vec(Expr::parse, p)?;
                 Self {
                     r#type,
                     items,
@@ -935,25 +939,25 @@ impl Elem {
 }
 
 impl Code {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
         struct Locals {
             count: u32,
             r#type: ValType,
         }
 
         impl Locals {
-            fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-                let count = u32(input)?;
-                let r#type = ValType::parse(input)?;
+            fn parse(p: &mut Parser) -> Result<Self, Error> {
+                let count = u32(p)?;
+                let r#type = ValType::parse(p)?;
                 Ok(Self { count, r#type })
             }
         }
 
-        let len_wanted = usize(u32(input)?);
-        let len_before = input.len();
-        let locals = vec(Locals::parse, input)?;
-        let body = Expr::parse(input)?;
-        if len_wanted != len_before.strict_sub(input.len()) {
+        let len_wanted = usize(u32(p)?);
+        let len_before = p.input.len();
+        let locals = vec(Locals::parse, p)?;
+        let body = Expr::parse(p)?;
+        if len_wanted != len_before.strict_sub(p.input.len()) {
             return Err(Error);
         }
         let locals = locals
@@ -965,20 +969,20 @@ impl Code {
 }
 
 impl Data {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let mode = match u32(input)? {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        let mode = match u32(p)? {
             0 => DataMode::Active {
                 memory: MemIdx(0),
-                offset: Expr::parse(input)?,
+                offset: Expr::parse(p)?,
             },
             1 => DataMode::Passive,
             2 => DataMode::Active {
-                memory: MemIdx::parse(input)?,
-                offset: Expr::parse(input)?,
+                memory: MemIdx::parse(p)?,
+                offset: Expr::parse(p)?,
             },
             _ => return Err(Error),
         };
-        let bytes = vec(u8, input)?;
+        let bytes = vec(u8, p)?;
         Ok(Self { bytes, mode })
     }
 }
@@ -986,9 +990,10 @@ impl Data {
 impl Module {
     /// # Errors
     ///
-    /// This function will return an error if the input is syntactically invalid.
+    /// This function will return an error if the p is syntactically invalid.
     pub fn parse(input: &[u8]) -> Result<Self, Error> {
-        let mut input = input.strip_prefix(b"\0asm\x01\0\0\0").ok_or(Error)?;
+        let input = input.strip_prefix(b"\0asm\x01\0\0\0").ok_or(Error)?;
+        let mut p = Parser { input };
 
         let mut customsecs = Vec::new();
         let mut typesec = Vec::new();
@@ -1006,8 +1011,8 @@ impl Module {
         let mut datasec = Vec::new();
 
         let mut section_id_prev = None;
-        while !input.is_empty() {
-            let section_id = SectionId::parse(&mut input)?;
+        while !p.input.is_empty() {
+            let section_id = SectionId::parse(&mut p)?;
             if section_id != SectionId::Custom {
                 if Some(section_id) <= section_id_prev {
                     return Err(Error);
@@ -1015,32 +1020,32 @@ impl Module {
                 section_id_prev = Some(section_id);
             }
 
-            let len_wanted = usize(u32(&mut input)?);
-            let len_before = input.len();
+            let len_wanted = usize(u32(&mut p)?);
+            let len_before = p.input.len();
             match section_id {
                 SectionId::Custom => {
-                    customsecs.push(Custom::parse(len_wanted, &mut input)?);
+                    customsecs.push(Custom::parse(len_wanted, &mut p)?);
                 }
-                SectionId::Type => typesec = vec(RecType::parse, &mut input)?,
-                SectionId::Import => importsec = vec(Import::parse, &mut input)?,
-                SectionId::Function => funcsec = vec(TypeIdx::parse, &mut input)?,
-                SectionId::Table => tablesec = vec(Table::parse, &mut input)?,
-                SectionId::Memory => memsec = vec(MemType::parse, &mut input)?,
-                SectionId::Tag => tagsec = vec(TagType::parse, &mut input)?,
-                SectionId::Global => globalsec = vec(Global::parse, &mut input)?,
-                SectionId::Export => exportsec = vec(Export::parse, &mut input)?,
-                SectionId::Start => startsec = Some(FuncIdx::parse(&mut input)?),
-                SectionId::Element => elemsec = vec(Elem::parse, &mut input)?,
-                SectionId::DataCount => datacntsec = Some(u32(&mut input)?),
-                SectionId::Code => codesec = vec(Code::parse, &mut input)?,
-                SectionId::Data => datasec = vec(Data::parse, &mut input)?,
+                SectionId::Type => typesec = vec(RecType::parse, &mut p)?,
+                SectionId::Import => importsec = vec(Import::parse, &mut p)?,
+                SectionId::Function => funcsec = vec(TypeIdx::parse, &mut p)?,
+                SectionId::Table => tablesec = vec(Table::parse, &mut p)?,
+                SectionId::Memory => memsec = vec(MemType::parse, &mut p)?,
+                SectionId::Tag => tagsec = vec(TagType::parse, &mut p)?,
+                SectionId::Global => globalsec = vec(Global::parse, &mut p)?,
+                SectionId::Export => exportsec = vec(Export::parse, &mut p)?,
+                SectionId::Start => startsec = Some(FuncIdx::parse(&mut p)?),
+                SectionId::Element => elemsec = vec(Elem::parse, &mut p)?,
+                SectionId::DataCount => datacntsec = Some(u32(&mut p)?),
+                SectionId::Code => codesec = vec(Code::parse, &mut p)?,
+                SectionId::Data => datasec = vec(Data::parse, &mut p)?,
             }
-            if len_wanted != len_before.strict_sub(input.len()) {
+            if len_wanted != len_before.strict_sub(p.input.len()) {
                 return Err(Error);
             }
         }
 
-        if !input.is_empty() {
+        if !p.input.is_empty() {
             return Err(Error);
         }
 
@@ -1064,8 +1069,8 @@ impl Module {
 }
 
 impl NumType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(match u8(input)? {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        Ok(match u8(p)? {
             0x7b => Self::V128,
             0x7c => Self::F64,
             0x7d => Self::F32,
@@ -1077,8 +1082,8 @@ impl NumType {
 }
 
 impl AbsHeapType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(match u8(input)? {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        Ok(match u8(p)? {
             0x69 => Self::Exn,
             0x6a => Self::Array,
             0x6b => Self::Struct,
@@ -1097,21 +1102,21 @@ impl AbsHeapType {
 }
 
 impl HeapType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        AbsHeapType::parse(input)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        AbsHeapType::parse(p)
             .map(Self::Abstract)
-            .or_else(|_| Ok(Self::Concrete(TypeIdx(leb128_s33_positive(input)?))))
+            .or_else(|_| Ok(Self::Concrete(TypeIdx(leb128_s33_positive(p)?))))
     }
 }
 
 impl RefType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let (r#type, nullable) = if byte(0x63, input) {
-            (HeapType::parse(input)?, true)
-        } else if byte(0x64, input) {
-            (HeapType::parse(input)?, false)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        let (r#type, nullable) = if byte(0x63, p) {
+            (HeapType::parse(p)?, true)
+        } else if byte(0x64, p) {
+            (HeapType::parse(p)?, false)
         } else {
-            (HeapType::Abstract(AbsHeapType::parse(input)?), false)
+            (HeapType::Abstract(AbsHeapType::parse(p)?), false)
         };
         Ok(Self {
             r#type,
@@ -1121,31 +1126,31 @@ impl RefType {
 }
 
 impl ValType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        (NumType::parse(input).map(Self::Num)).or_else(|_| RefType::parse(input).map(Self::Ref))
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        (NumType::parse(p).map(Self::Num)).or_else(|_| RefType::parse(p).map(Self::Ref))
     }
 }
 
 impl ResultType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        vec(ValType::parse, input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        vec(ValType::parse, p).map(Self)
     }
 }
 
 impl Mut {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        u8(input)?.try_into().map_err(|_| Error).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        u8(p)?.try_into().map_err(|_| Error).map(Self)
     }
 }
 
 impl CompType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(match u8(input)? {
-            0x5e => Self::Array(FieldType::parse(input)?),
-            0x5f => Self::Struct(vec(FieldType::parse, input)?),
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        Ok(match u8(p)? {
+            0x5e => Self::Array(FieldType::parse(p)?),
+            0x5f => Self::Struct(vec(FieldType::parse, p)?),
             0x60 => Self::Func {
-                inputs: ResultType::parse(input)?,
-                outputs: ResultType::parse(input)?,
+                inputs: ResultType::parse(p)?,
+                outputs: ResultType::parse(p)?,
             },
             _ => return Err(Error),
         })
@@ -1153,22 +1158,22 @@ impl CompType {
 }
 
 impl FieldType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let r#type = StorageType::parse(input)?;
-        let mutability = Mut::parse(input).ok();
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        let r#type = StorageType::parse(p)?;
+        let mutability = Mut::parse(p).ok();
         Ok(Self { r#type, mutability })
     }
 }
 
 impl StorageType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        (ValType::parse(input).map(Self::Val)).or_else(|_| PackType::parse(input).map(Self::Pack))
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        (ValType::parse(p).map(Self::Val)).or_else(|_| PackType::parse(p).map(Self::Pack))
     }
 }
 
 impl PackType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(match u8(input)? {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        Ok(match u8(p)? {
             0x77 => Self::I16,
             0x78 => Self::I8,
             _ => return Err(Error),
@@ -1177,60 +1182,60 @@ impl PackType {
 }
 
 impl RecType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(Self(if byte(0x4e, input) {
-            vec(SubType::parse, input)?
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        Ok(Self(if byte(0x4e, p) {
+            vec(SubType::parse, p)?
         } else {
-            [SubType::parse(input)?].into()
+            [SubType::parse(p)?].into()
         }))
     }
 }
 
 impl SubType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(if byte(0x4f, input) {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        Ok(if byte(0x4f, p) {
             Self {
                 is_final: true,
-                uses: vec(TypeIdx::parse, input)?,
-                comp: CompType::parse(input)?,
+                uses: vec(TypeIdx::parse, p)?,
+                comp: CompType::parse(p)?,
             }
-        } else if byte(0x50, input) {
+        } else if byte(0x50, p) {
             Self {
                 is_final: false,
-                uses: vec(TypeIdx::parse, input)?,
-                comp: CompType::parse(input)?,
+                uses: vec(TypeIdx::parse, p)?,
+                comp: CompType::parse(p)?,
             }
         } else {
             Self {
                 is_final: true,
                 uses: Vec::new(),
-                comp: CompType::parse(input)?,
+                comp: CompType::parse(p)?,
             }
         })
     }
 }
 
 impl Limits {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Ok(match u8(input)? {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        Ok(match u8(p)? {
             0x00 => Self {
-                start: u64(input)?,
+                start: u64(p)?,
                 end: None,
                 address_type: AddressType::I32,
             },
             0x01 => Self {
-                start: u64(input)?,
-                end: Some(u64(input)?),
+                start: u64(p)?,
+                end: Some(u64(p)?),
                 address_type: AddressType::I32,
             },
             0x04 => Self {
-                start: u64(input)?,
+                start: u64(p)?,
                 end: None,
                 address_type: AddressType::I64,
             },
             0x05 => Self {
-                start: u64(input)?,
-                end: Some(u64(input)?),
+                start: u64(p)?,
+                end: Some(u64(p)?),
                 address_type: AddressType::I64,
             },
             _ => return Err(Error),
@@ -1239,66 +1244,67 @@ impl Limits {
 }
 
 impl TagType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let 0x00 = u8(input)? else {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        let 0x00 = u8(p)? else {
             return Err(Error);
         };
-        TypeIdx::parse(input).map(Self)
+        TypeIdx::parse(p).map(Self)
     }
 }
 
 impl GlobalType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
         Ok(Self {
-            value_type: ValType::parse(input)?,
-            mutability: Mut::parse(input).ok(),
+            value_type: ValType::parse(p)?,
+            mutability: Mut::parse(p).ok(),
         })
     }
 }
 
 impl MemType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        Limits::parse(input).map(Self)
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        Limits::parse(p).map(Self)
     }
 }
 
 impl TableType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
         Ok(Self {
-            ref_type: RefType::parse(input)?,
-            limits: Limits::parse(input)?,
+            ref_type: RefType::parse(p)?,
+            limits: Limits::parse(p)?,
         })
     }
 }
 
 impl ExternType {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        match u8(input)? {
-            0x00 => TypeIdx::parse(input).map(Self::Func),
-            0x01 => TableType::parse(input).map(Self::Table),
-            0x02 => MemType::parse(input).map(Self::Mem),
-            0x03 => GlobalType::parse(input).map(Self::Global),
-            0x04 => TagType::parse(input).map(Self::Tag),
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        match u8(p)? {
+            0x00 => TypeIdx::parse(p).map(Self::Func),
+            0x01 => TableType::parse(p).map(Self::Table),
+            0x02 => MemType::parse(p).map(Self::Mem),
+            0x03 => GlobalType::parse(p).map(Self::Global),
+            0x04 => TagType::parse(p).map(Self::Tag),
             _ => Err(Error),
         }
     }
 }
 
-fn byte_array<const N: usize>(input: &mut &[u8]) -> Result<[u8; N], Error> {
-    Ok(input.split_off(..N).ok_or(Error)?.try_into().unwrap())
+fn byte_array<const N: usize>(p: &mut Parser) -> Result<[u8; N], Error> {
+    let slice = p.input.split_off(..N).ok_or(Error)?;
+    Ok(slice.try_into().unwrap())
 }
 
-fn u8(input: &mut &[u8]) -> Result<u8, Error> {
-    input.split_off_first().copied().ok_or(Error)
+fn u8(p: &mut Parser) -> Result<u8, Error> {
+    p.input.split_off_first().copied().ok_or(Error)
 }
 
-fn uleb128<T>(input: &mut &[u8]) -> Result<T, Error>
+fn uleb128<T>(p: &mut Parser) -> Result<T, Error>
 where
     T: Default + From<u8> + core::ops::BitOrAssign + core::ops::Shl<usize, Output = T>,
 {
     let mut n = T::default();
     for shift in (0..const { size_of::<T>() * 8 }).step_by(7) {
-        let byte = u8(input)?;
+        let byte = u8(p)?;
         #[expect(
             clippy::arithmetic_side_effects,
             reason = "Shift amount is bounded by size of `T`"
@@ -1313,10 +1319,10 @@ where
     Err(Error)
 }
 
-fn leb128_s33_positive(input: &mut &[u8]) -> Result<u32, Error> {
+fn leb128_s33_positive(p: &mut Parser) -> Result<u32, Error> {
     let mut n = 0;
     for shift in (0..33_usize).step_by(7) {
-        let byte = u8(input)?;
+        let byte = u8(p)?;
         n |= i64::from(byte & !(1 << 7)) << shift;
         if byte & (1 << 7) == 0 {
             if byte & (1 << 6) != 0 {
@@ -1328,31 +1334,34 @@ fn leb128_s33_positive(input: &mut &[u8]) -> Result<u32, Error> {
     Err(Error)
 }
 
-fn u32(input: &mut &[u8]) -> Result<u32, Error> {
-    uleb128(input)
+fn u32(p: &mut Parser) -> Result<u32, Error> {
+    uleb128(p)
 }
 
-fn u64(input: &mut &[u8]) -> Result<u64, Error> {
-    uleb128(input)
+fn u64(p: &mut Parser) -> Result<u64, Error> {
+    uleb128(p)
 }
 
 impl Name {
-    fn parse(input: &mut &[u8]) -> Result<Self, Error> {
-        let bytes: Vec<u8> = vec(u8, input)?;
+    fn parse(p: &mut Parser) -> Result<Self, Error> {
+        let bytes: Vec<u8> = vec(u8, p)?;
         bytes.try_into().map_err(|_| Error).map(Name)
     }
 }
 
-fn byte(b: u8, input: &mut &[u8]) -> bool {
-    input.strip_prefix(&[b]).inspect(|it| *input = it).is_some()
+fn byte(b: u8, p: &mut Parser) -> bool {
+    p.input
+        .strip_prefix(&[b])
+        .inspect(|it| p.input = it)
+        .is_some()
 }
 
 fn vec<T>(
-    element: impl Fn(&mut &[u8]) -> Result<T, Error>,
-    input: &mut &[u8],
+    element: impl Fn(&mut Parser) -> Result<T, Error>,
+    p: &mut Parser,
 ) -> Result<Vec<T>, Error> {
-    let len = u32(input)?;
-    let iter = core::iter::repeat_with(|| element(input));
+    let len = u32(p)?;
+    let iter = core::iter::repeat_with(|| element(p));
     iter.take(usize(len)).collect()
 }
 
