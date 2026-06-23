@@ -50,11 +50,13 @@ impl Instr {
                 p.stack.push(BlockKind::If);
                 Self::IfElse(BlockType::parse(p)?)
             }
-            0x05 => p
-                .stack
-                .pop_if(|it| matches!(it, BlockKind::If))
-                .map(|_| Self::Else)
-                .ok_or(Error)?,
+            0x05 => {
+                let [.., kind @ BlockKind::If] = &mut *p.stack else {
+                    return Err(Error);
+                };
+                *kind = BlockKind::Other; // No more `else` for this `if`
+                Self::Else
+            }
             0x08 => Self::Throw(TagIdx::parse(p)?),
             0x0a => Self::ThrowRef,
             0x0b => p.stack.pop().map(|_| Self::End).ok_or(Error)?,
